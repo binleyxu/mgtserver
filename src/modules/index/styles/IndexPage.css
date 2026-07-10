@@ -1,0 +1,148 @@
+.index-page-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.index-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.index-layout-container {
+  min-height: calc(100vh - 64px);
+}
+
+.index-sider {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.index-sider .ant-menu {
+  border-right: 1px solid #f0f0f0;
+}
+
+.index-content {
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.index-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.welcome-section h2 {
+  font-size: 1.75rem;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.welcome-section p {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.menu-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.menu-card:hover {
+  transform: translateY(-8px);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-icon {
+  font-size: 32px;
+  color: #667eea;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-desc {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.index-footer {
+  background: white;
+  text-align: center;
+  padding: 20px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.index-footer p {
+  margin: 0;
+  color: #666;
+}
+
+.permission-legend-section {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.permission-legend-section h3 {
+  margin: 0 0 8px 0;
+  color: #d46b08;
+  font-size: 1rem;
+}
+
+.permission-legend-section p {
+  margin: 4px 0;
+  color: #8c8c8c;
+}

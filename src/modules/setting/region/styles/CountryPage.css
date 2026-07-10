@@ -1,0 +1,60 @@
+.country-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.country-card {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.country-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.country-sync-meta {
+  color: #666;
+  font-size: 12px;
+}
+
+.country-page .ant-tag {
+  margin-inline-end: 0;
+}
+
+.country-table .ant-table-thead > tr > th,
+.country-table .ant-table-tbody > tr > td {
+  padding: 12px 10px;
+}
+
+.country-name-cell {
+  align-items: center;
+}
+
+.country-flag-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.country-flag-image {
+  width: 24px;
+  height: 18px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.country-flag-fallback {
+  min-width: 24px;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  flex: 0 0 auto;
+}

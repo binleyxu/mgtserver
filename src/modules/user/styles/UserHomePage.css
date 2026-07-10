@@ -1,0 +1,12 @@
+.user-page {
+  padding: 24px;
+}
+
+.user-page h2 {
+  margin-bottom: 8px;
+}
+
+.user-page-error {
+  margin-bottom: 12px;
+  color: #cf1322;
+}
