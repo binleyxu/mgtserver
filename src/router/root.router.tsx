@@ -1,7 +1,7 @@
 import { Navigate, useRoutes } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
 
-import { RequireAdminAuth } from '@/auth'
+import { RequireAdminAuth, SessionTimeoutManager } from '@/auth'
 import { RequirePrivilegedRouter } from './guards'
 import { privilegedRouterItems } from './privileged.router'
 import { protectedRouterItems } from './protected.router'
@@ -12,12 +12,17 @@ const appRouterItems: RouteObject[] = [
   {
     element: <RequireAdminAuth />,
     children: [
-      ...protectedRouterItems,
       {
-        element: <RequirePrivilegedRouter />,
-        children: privilegedRouterItems,
+        element: <SessionTimeoutManager />,
+        children: [
+          ...protectedRouterItems,
+          {
+            element: <RequirePrivilegedRouter />,
+            children: privilegedRouterItems,
+          },
+          { path: '*', element: <Navigate to="/index" replace /> },
+        ],
       },
-      { path: '*', element: <Navigate to="/index" replace /> },
     ],
   },
 ]

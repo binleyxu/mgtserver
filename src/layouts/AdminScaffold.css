@@ -1,0 +1,311 @@
+.admin-scaffold-layout {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% -20%, #f7faf8 0%, #eef3f5 46%, #e8eef1 100%);
+}
+
+.admin-scaffold-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: 44px 176px minmax(0, 1fr);
+  align-items: center;
+  height: 64px;
+  padding: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #dbe5eb;
+}
+
+.admin-scaffold-header-left,
+.admin-scaffold-header-center,
+.admin-scaffold-header-right {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.admin-scaffold-header-left {
+  justify-content: center;
+  border-right: 1px solid #dbe5eb;
+}
+
+.admin-scaffold-header-center {
+  justify-content: center;
+  border-right: 1px solid #dbe5eb;
+}
+
+.admin-scaffold-header-right {
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.admin-scaffold-title {
+  margin: 0;
+  color: #162331;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.admin-scaffold-brand-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+
+.admin-scaffold-breadcrumb {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.admin-scaffold-body {
+  min-height: calc(100vh - 64px);
+  display: grid;
+  grid-template-columns: 44px 176px minmax(0, 1fr);
+}
+
+.admin-scaffold-rail {
+  background: #ffffff;
+  border-right: 1px solid #dbe5eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  position: sticky;
+  top: 64px;
+  align-self: start;
+  height: calc(100vh - 64px);
+}
+
+.admin-scaffold-rail-menu {
+  border-inline-end: none !important;
+  background: transparent;
+  padding: 8px 0 2px;
+  width: 100%;
+  flex: 1;
+}
+
+.admin-scaffold-rail-menu .ant-menu-item {
+  margin-inline: 4px;
+  width: calc(100% - 8px);
+  border-radius: 12px;
+  height: 40px;
+  line-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-scaffold-rail-menu .ant-menu-item .ant-menu-title-content {
+  display: none;
+}
+
+.admin-scaffold-rail-menu .ant-menu-item .anticon,
+.admin-scaffold-rail-menu .ant-menu-item img {
+  margin-right: 0;
+  font-size: 18px;
+}
+
+.admin-scaffold-rail-menu .admin-menu-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.42);
+  transition: filter 0.16s ease;
+}
+
+.admin-scaffold-rail-menu .ant-menu-item-selected {
+  background: #1f2f3d;
+  color: #ffffff;
+}
+
+.admin-scaffold-rail-menu .ant-menu-item-selected .admin-menu-icon {
+  filter: brightness(0) invert(1);
+}
+
+.admin-scaffold-rail-footer {
+  width: 100%;
+  padding: 0 0 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-scaffold-user-trigger {
+  border: 1px solid #d7e1e7;
+  background: #f6fbfd;
+  color: #1f2f3d;
+  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.admin-scaffold-user-trigger:hover {
+  background: #eef5f7;
+  border-color: #c7d7df;
+}
+
+.admin-scaffold-sider {
+  background: #ffffff;
+  border-right: 1px solid #dbe5eb;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-scaffold-sider-title {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 10px;
+  color: #15202d;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px solid #dbe5eb;
+  background: #f9fbfc;
+}
+
+.admin-scaffold-sider-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-scaffold-sider-collapse {
+  border: 1px solid #d7e1e7;
+  background: #ffffff;
+  color: #3b4d5a;
+  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.admin-scaffold-menu {
+  border-inline-end: none !important;
+  background: transparent;
+  padding: 2px 4px 0;
+}
+
+.admin-scaffold-menu .ant-menu-item,
+.admin-scaffold-menu .ant-menu-submenu-title {
+  height: 34px;
+  line-height: 34px;
+  margin-block: 1px;
+  border-radius: 8px;
+}
+
+.admin-scaffold-menu .ant-menu-submenu-title {
+  padding-inline: 10px !important;
+}
+
+.admin-scaffold-menu .ant-menu-item {
+  flex: 1;
+  padding-inline: 10px !important;
+}
+
+.admin-scaffold-menu .admin-menu-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.34);
+  transition: filter 0.16s ease;
+}
+
+.admin-scaffold-menu .menu-image-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.34);
+  transition: filter 0.16s ease;
+}
+
+.admin-scaffold-menu .ant-menu-item-selected .admin-menu-icon,
+.admin-scaffold-menu .ant-menu-submenu-selected .admin-menu-icon {
+  filter: invert(53%) sepia(31%) saturate(593%) hue-rotate(142deg) brightness(92%) contrast(90%);
+}
+
+.admin-scaffold-menu .ant-menu-item-selected .menu-image-icon,
+.admin-scaffold-menu .ant-menu-submenu-selected .menu-image-icon {
+  filter: invert(53%) sepia(31%) saturate(593%) hue-rotate(142deg) brightness(92%) contrast(90%);
+}
+
+.admin-scaffold-menu .ant-menu-submenu > .ant-menu-submenu-title > .ant-menu-title-content {
+  font-weight: 600;
+}
+
+.admin-scaffold-sider.is-collapsed {
+  width: 0;
+  border-right: none;
+}
+
+.admin-scaffold-sider.is-collapsed .admin-scaffold-sider-title,
+.admin-scaffold-sider.is-collapsed .admin-scaffold-menu {
+  display: none;
+}
+
+.admin-scaffold-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-scaffold-content {
+  padding: 6px;
+}
+
+.admin-scaffold-content > *:first-child {
+  margin-top: 0;
+}
+
+.admin-scaffold-footer {
+  background: transparent;
+  border-top: 1px solid #dbe5eb;
+  color: #6c7f8f;
+  text-align: center;
+  padding: 16px 20px;
+}
+
+@media (max-width: 992px) {
+  .admin-scaffold-header {
+    grid-template-columns: 44px 160px minmax(0, 1fr);
+  }
+
+  .admin-scaffold-header-center {
+    justify-content: flex-start;
+  }
+
+  .admin-scaffold-body {
+    grid-template-columns: 0 152px minmax(0, 1fr);
+  }
+
+  .admin-scaffold-rail {
+    display: none;
+  }
+
+  .admin-scaffold-sider-title {
+    height: 38px;
+    padding: 0 8px;
+  }
+
+  .admin-scaffold-header-right {
+    gap: 8px;
+    padding-right: 10px;
+  }
+
+  .admin-scaffold-content {
+    padding: 8px;
+  }
+}

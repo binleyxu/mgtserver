@@ -5,7 +5,7 @@ import { AppRouter } from './router'
 
 function App() {
   return (
-    <Suspense fallback={<div style={{ padding: 24 }}>页面加载中...</div>}>
+    <Suspense fallback={<div className="app-loading">页面加载中...</div>}>
       <AppRouter />
     </Suspense>
   )

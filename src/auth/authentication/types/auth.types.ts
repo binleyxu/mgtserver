@@ -9,6 +9,17 @@ export interface AdminLoginResponse {
   message: string;
   access_token: string;
   token_type: string;
+  expires_at?: number;
+  expires_in?: number;
+  warning_before_seconds?: number;
+  server_time?: number;
+}
+
+export interface AdminSessionMeta {
+  expires_at?: number;
+  expires_in?: number;
+  warning_before_seconds?: number;
+  server_time?: number;
 }
 
 export interface ApiResponse<T> {

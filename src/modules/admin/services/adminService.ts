@@ -27,6 +27,7 @@ import type {
   MenuUpdateRequest,
 } from '../types/admin.types';
 import { buildAuthHeaders, handleUnauthorizedResponse } from '@/auth'
+import { DEFAULT_ADMIN_AVATAR_DATA_URI } from '../avatar/utils/imageTransform'
 
 function getAuthHeaders(): Record<string, string> {
   return buildAuthHeaders()
@@ -39,6 +40,8 @@ function handleAuthResponse(response: Response): void {
 function mapAdminItem(item: any): Admin {
   const rawId = item.id ?? item.admin_id ?? item.user_id ?? item.uid
   const toText = (value: unknown): string => (typeof value === 'string' ? value : value != null ? String(value) : '')
+  const avatarSmall = toText(item.avatar_small_url ?? item.avatar_url)
+  const avatarLarge = toText(item.avatar_large_url ?? item.avatar_url)
 
   return {
     id: rawId !== undefined && rawId !== null ? String(rawId) : '',
@@ -47,6 +50,10 @@ function mapAdminItem(item: any): Admin {
     email: toText(item.email),
     role: toText(item.role),
     roleId: item.role_id !== undefined && item.role_id !== null ? Number(item.role_id) : undefined,
+    avatarSmallUrl: avatarSmall || DEFAULT_ADMIN_AVATAR_DATA_URI,
+    avatarLargeUrl: avatarLarge || DEFAULT_ADMIN_AVATAR_DATA_URI,
+    avatarVersion: item.avatar_version !== undefined && item.avatar_version !== null ? Number(item.avatar_version) : null,
+    avatarUpdatedAt: toText(item.avatar_updated_at) || null,
     status: item.is_active ? 'active' : 'inactive',
     createdAt: toText(item.created_at),
     updatedAt: toText(item.last_login),

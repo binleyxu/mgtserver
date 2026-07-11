@@ -41,7 +41,12 @@ export function useLogin() {
 
       const response = await loginAdmin(data)
       if (response.success && response.access_token) {
-        setAdminToken(response.access_token)
+        setAdminToken(response.access_token, {
+          expires_at: response.expires_at,
+          expires_in: response.expires_in,
+          warning_before_seconds: response.warning_before_seconds,
+          server_time: response.server_time,
+        })
 
         const adminStatus = await resolveAdminStatus(data.username, response.access_token)
 

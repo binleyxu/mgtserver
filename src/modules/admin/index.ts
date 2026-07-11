@@ -23,6 +23,7 @@ export {
 } from './role'
 
 export { RolePage } from './role'
+export * from './avatar'
 
 export type {
   Admin,

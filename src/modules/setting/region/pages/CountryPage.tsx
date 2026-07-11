@@ -1,20 +1,17 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Layout, Menu, Button, Card, Space, Table, Tag, Dropdown, message, Modal, Input } from 'antd'
+import { Button, Card, Space, Table, Tag, message, Modal, Input } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { DashboardOutlined, UserOutlined, SettingOutlined, LogoutOutlined, SyncOutlined, QuestionCircleOutlined, EditOutlined, FileSearchOutlined } from '@ant-design/icons'
-import '../../../index/styles/IndexPage.css'
+import { SyncOutlined, QuestionCircleOutlined, EditOutlined, FileSearchOutlined } from '@ant-design/icons'
 import '../styles/CountryPage.css'
-import { clearAdminToken, getAdminIdFromToken } from '@/auth'
-import countryGlobeIcon from '../../../../assets/country-globe.svg?url'
-import regionManagementIcon from '../../../../assets/region-management.svg?url'
+import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
 import { getAdminDetail } from '../../../admin'
 import { getCountryList, getCountrySyncRuns, updateCountryDisplayName } from '../services/countryService'
 import type { Country, CountrySyncSummary } from '../types/country.types'
 import { formatDateTimeDMY } from '../../../../utils/dateTimeFormat'
 import { useCountrySyncFlow } from '../hooks/useCountrySyncFlow'
-
-const { Header, Content, Sider } = Layout
+import { AdminScaffold } from '@/layouts/AdminScaffold'
+import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
 function getFlagImageUrl(cca2: string) {
   const code = (cca2 || '').trim().toLowerCase()
@@ -23,6 +20,49 @@ function getFlagImageUrl(cca2: string) {
   }
 
   return `https://flagcdn.com/24x18/${code}.png`
+}
+
+function createTaiwanFallback(nextId: number): Country {
+  const now = new Date().toISOString()
+  return {
+    id: nextId,
+    countryCode: 'TW',
+    sourceNameCommon: 'Taiwan',
+    cca2: 'TW',
+    cca3: 'TWN',
+    ccn3: '158',
+    callingCode: '+886',
+    nameCommon: '台湾',
+    nameOfficial: 'Taiwan',
+    region: 'Asia',
+    subregion: 'Eastern Asia',
+    capital: ['Taipei'],
+    population: 23500000,
+    area: 36193,
+    flagEmoji: '🇹🇼',
+    flagPng: getFlagImageUrl('TW'),
+    currencies: {},
+    languages: {},
+    independent: true,
+    unMember: false,
+    updatedAt: now,
+  }
+}
+
+function ensureTaiwanCountry(countries: Country[]): Country[] {
+  const hasTaiwan = countries.some((item) => {
+    const cca2 = (item.cca2 || '').trim().toUpperCase()
+    const cca3 = (item.cca3 || '').trim().toUpperCase()
+    const name = `${item.nameCommon || ''} ${item.nameOfficial || ''} ${item.sourceNameCommon || ''}`.toLowerCase()
+    return cca2 === 'TW' || cca3 === 'TWN' || name.includes('taiwan') || name.includes('台湾')
+  })
+
+  if (hasTaiwan) {
+    return countries
+  }
+
+  const maxId = countries.reduce((max, item) => (item.id > max ? item.id : max), 0)
+  return [...countries, createTaiwanFallback(maxId + 1)]
 }
 
 export const CountryPage: React.FC = () => {
@@ -62,42 +102,19 @@ export const CountryPage: React.FC = () => {
     navigate('/login', { replace: true })
   }
 
-  const menuItems = [
-    { key: 'home', icon: <DashboardOutlined />, label: '主页', onClick: () => navigate('/index') },
-    { key: 'admin', icon: <UserOutlined />, label: '管理员', onClick: () => navigate('/admin') },
-    {
-      key: 'setting',
-      icon: <SettingOutlined />,
-      label: '设置',
-      children: [
-        {
-          key: 'menu-management',
-          icon: <SettingOutlined />,
-          label: '菜单管理',
-          onClick: () => navigate('/setting/menu'),
-        },
-        {
-          key: 'region-management',
-          icon: <img src={regionManagementIcon} alt="" width={14} height={14} style={{ filter: 'invert(1)' }} />,
-          label: '地区管理',
-          children: [
-            {
-              key: 'country',
-              icon: <img src={countryGlobeIcon} alt="" width={14} height={14} style={{ filter: 'invert(1)' }} />,
-              label: '国家',
-              onClick: () => navigate('/setting/region/country'),
-            },
-          ],
-        },
-      ],
-    },
-  ]
+  const role = getAdminRoleFromToken()
+  const canAccessPrivilegedModules = canAccessAdminAndSettings(role)
+  const menuItems = buildAdminMenuItems({
+    canAccessPrivilegedModules,
+    includeUser: true,
+    navigate,
+  })
 
   const loadCountry = async () => {
     setLoading(true)
     try {
       const response = await getCountryList()
-      setCountryList(response.data || [])
+      setCountryList(ensureTaiwanCountry(response.data || []))
     } catch (error) {
       message.error(error instanceof Error ? error.message : '加载国家数据失败')
     } finally {
@@ -328,61 +345,18 @@ export const CountryPage: React.FC = () => {
   ], [])
 
   return (
-    <Layout className="index-page-layout">
-      <Header className="index-header">
-        <div className="header-left">
-          <h1 className="header-title">管理后台</h1>
-        </div>
-        <div className="header-right">
-          <Dropdown
-            menu={{
-              items: [{ key: 'logout', icon: <LogoutOutlined />, label: '登出', onClick: handleLogout }],
-            }}
-          >
-            <div
-              style={{
-                color: '#1f1f1f',
-                background: 'rgba(255, 255, 255, 0.92)',
-                borderRadius: 16,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 32,
-                padding: '0 10px',
-                cursor: 'pointer',
-              }}
-            >
-              <UserOutlined />
-              <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                {currentAdminName || '管理员'}
-              </span>
-            </div>
-          </Dropdown>
-        </div>
-      </Header>
-
-      <Layout className="index-layout-container">
-        <Sider
-          collapsible
-          collapsed={collapsed}
-          onCollapse={setCollapsed}
-          className="index-sider"
-          width={220}
-        >
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={['country']}
-            openKeys={openKeys}
-            onOpenChange={setOpenKeys}
-            items={menuItems}
-          />
-        </Sider>
-
-        <Layout>
-          <Content className="index-content">
-            <div className="country-page">
-              <Card className="country-card" title="地区管理 / 国家">
+    <AdminScaffold
+      currentAdminName={currentAdminName}
+      collapsed={collapsed}
+      onCollapse={setCollapsed}
+      selectedKeys={['country']}
+      openKeys={openKeys}
+      onOpenChange={setOpenKeys}
+      menuItems={menuItems}
+      onLogout={handleLogout}
+    >
+      <div className="country-page">
+        <Card className="country-card" title="地区管理 / 国家">
                 <div className="country-toolbar">
                   <Space size={0} style={{ marginLeft: 'auto' }}>
                     <Button
@@ -416,6 +390,16 @@ export const CountryPage: React.FC = () => {
                   columns={columns}
                   dataSource={countryList}
                   loading={loading}
+                  locale={{
+                    emptyText: (
+                      <div style={{ padding: '8px 0' }}>
+                        <div style={{ marginBottom: 8 }}>暂无国家数据，请先执行一次同步</div>
+                        <Button type="primary" size="small" icon={<SyncOutlined />} onClick={openSyncModal} loading={syncing}>
+                          立即同步
+                        </Button>
+                      </div>
+                    ),
+                  }}
                   scroll={{ x: 740 }}
                   pagination={{
                     pageSize: 20,
@@ -524,12 +508,9 @@ export const CountryPage: React.FC = () => {
                     placeholder="请输入国家展示名称"
                   />
                 </Modal>
-              </Card>
-            </div>
-          </Content>
-        </Layout>
-      </Layout>
-    </Layout>
+        </Card>
+      </div>
+    </AdminScaffold>
   )
 }
 

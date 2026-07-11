@@ -1,4 +1,5 @@
 export { RequireAdminAuth } from './components/RequireAdminAuth'
+export { SessionTimeoutManager } from './components/SessionTimeoutManager'
 
 export type {
   AdminLoginRequest,
@@ -8,6 +9,7 @@ export type {
 
 export {
   loginAdmin,
+  refreshAdminSession,
   setAdminToken,
   clearAdminToken,
   getHumanChallenge,

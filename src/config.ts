@@ -13,10 +13,26 @@ export const DISPLAY_TIME_ZONE = import.meta.env.VITE_DISPLAY_TIME_ZONE ?? 'Aust
 const DEFAULT_COUNTRY_SYNC_TIMEOUT_SECONDS = 300
 const parsedCountrySyncTimeoutSeconds = Number.parseInt(import.meta.env.VITE_COUNTRY_SYNC_TIMEOUT_SECONDS ?? '', 10)
 
+const DEFAULT_SESSION_TIMEOUT_SECONDS = 1800
+const parsedSessionTimeoutSeconds = Number.parseInt(import.meta.env.VITE_SESSION_TIMEOUT_SECONDS ?? '', 10)
+
+const DEFAULT_SESSION_WARNING_SECONDS = 300
+const parsedSessionWarningSeconds = Number.parseInt(import.meta.env.VITE_SESSION_WARNING_SECONDS ?? '', 10)
+
 export const COUNTRY_SYNC_TIMEOUT_SECONDS =
 	Number.isFinite(parsedCountrySyncTimeoutSeconds) && parsedCountrySyncTimeoutSeconds > 0
 		? parsedCountrySyncTimeoutSeconds
 		: DEFAULT_COUNTRY_SYNC_TIMEOUT_SECONDS
+
+export const SESSION_TIMEOUT_SECONDS =
+	Number.isFinite(parsedSessionTimeoutSeconds) && parsedSessionTimeoutSeconds > 0
+		? parsedSessionTimeoutSeconds
+		: DEFAULT_SESSION_TIMEOUT_SECONDS
+
+export const SESSION_WARNING_SECONDS =
+	Number.isFinite(parsedSessionWarningSeconds) && parsedSessionWarningSeconds > 0
+		? parsedSessionWarningSeconds
+		: DEFAULT_SESSION_WARNING_SECONDS
 
 function withApiBase(path: string): string {
 	return `${API_BASE_URL}${path}`
@@ -25,6 +41,7 @@ function withApiBase(path: string): string {
 export const API_ENDPOINTS = {
 	AUTH: {
 		LOGIN: withApiBase('/login'),
+		REFRESH: withApiBase('/auth/refresh'),
 		CHALLENGE: withApiBase('/auth/challenge'),
 		MENU: withApiBase('/auth/menu'),
 	},
@@ -34,6 +51,7 @@ export const API_ENDPOINTS = {
 		CREATE: withApiBase('/admin'),
 		UPDATE: (id: string) => withApiBase(`/admin/${id}`),
 		DELETE: (id: string) => withApiBase(`/admin/${id}`),
+		AVATAR_UPLOAD: (id: string) => withApiBase(`/admin/${id}/avatar`),
 		ROLE_LIST: withApiBase('/admin/roles/list'),
 		ROLE_CREATE: withApiBase('/admin/roles'),
 		ROLE_UPDATE: (roleId: number) => withApiBase(`/admin/roles/${roleId}`),

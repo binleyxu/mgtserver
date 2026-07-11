@@ -10,6 +10,10 @@ export interface Admin {
   email: string;
   role: string;
   roleId?: number;
+  avatarSmallUrl?: string | null;
+  avatarLargeUrl?: string | null;
+  avatarVersion?: number | null;
+  avatarUpdatedAt?: string | null;
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;

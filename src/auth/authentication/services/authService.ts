@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../../../config'
-import type { AdminLoginRequest, AdminLoginResponse } from '../types/auth.types'
+import type { AdminLoginRequest, AdminLoginResponse, AdminSessionMeta } from '../types/auth.types'
 import { extractApiMessage, isBusinessSuccess, readEnvelopeCode, readHttpErrorDetails } from '../../../utils/apiSemantics'
 import { clearAdminToken as clearAdminTokenInStorage, setAdminToken as setAdminTokenInStorage } from './sessionService'
 
@@ -49,12 +49,30 @@ function normalizeLoginResponse(payload: unknown): AdminLoginResponse {
       ? data.token_type
       : 'bearer'
 
+  const expiresAt = readNumberField(data, body, 'expires_at')
+  const expiresIn = readNumberField(data, body, 'expires_in')
+  const warningBeforeSeconds = readNumberField(data, body, 'warning_before_seconds')
+  const serverTime = readNumberField(data, body, 'server_time')
+
   return {
     success: true,
     message: typeof body.message === 'string' ? body.message : '登录成功',
     access_token: accessToken,
     token_type: tokenType,
+    expires_at: expiresAt,
+    expires_in: expiresIn,
+    warning_before_seconds: warningBeforeSeconds,
+    server_time: serverTime,
   }
+}
+
+function readNumberField(
+  data: Record<string, unknown> | null,
+  body: Record<string, unknown>,
+  key: string
+): number | undefined {
+  const value = data?.[key] ?? body[key]
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
 export async function loginAdmin(
@@ -121,8 +139,26 @@ export async function getHumanChallenge(): Promise<{ id: string; nonce?: string;
   throw new Error('获取人机挑战失败：响应格式错误')
 }
 
-export function setAdminToken(token: string) {
-  setAdminTokenInStorage(token)
+export async function refreshAdminSession(): Promise<AdminLoginResponse> {
+  const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const payload = await readHttpErrorDetails(response, `HTTP ${response.status}`)
+    throw new ApiHttpError(payload.message, response.status, payload.retryAfterSeconds, payload.lockType)
+  }
+
+  const payload = await response.json()
+  return normalizeLoginResponse(payload)
+}
+
+export function setAdminToken(token: string, sessionMeta?: AdminSessionMeta) {
+  setAdminTokenInStorage(token, sessionMeta)
 }
 
 export function clearAdminToken() {

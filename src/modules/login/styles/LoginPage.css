@@ -3,24 +3,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at 0% 0%, #f5fbfc 0%, #edf5f7 44%, #e6eef2 100%);
   padding: 20px;
 }
 
 .login-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
 }
 
 .login-card {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  border: none;
-  border-radius: 8px;
+  box-shadow: 0 16px 42px rgba(20, 38, 51, 0.12);
+  border: 1px solid #d7e1e7;
+  border-radius: 14px;
 }
 
 .login-title {
   text-align: center;
   margin: 0;
   font-size: 1.5rem;
-  color: #667eea;
+  color: #1a2a39;
 }

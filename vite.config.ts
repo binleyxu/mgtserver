@@ -19,21 +19,30 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return
 
-          if (
-            id.includes('/antd/es/table') ||
-            id.includes('/rc-table') ||
-            id.includes('/rc-pagination') ||
-            id.includes('/rc-resize-observer')
-          ) {
-            return 'antd-admin'
-          }
-
-          if (id.includes('/antd/') || id.includes('/@ant-design/')) {
-            return 'antd-core'
-          }
-
           if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router-dom/')) {
             return 'react-vendor'
+          }
+
+          if (id.includes('/@ant-design/icons/')) {
+            return 'antd-icons'
+          }
+
+          const antdComponentMatch = id.match(/\/antd\/es\/([^/]+)/)
+          if (antdComponentMatch?.[1]) {
+            return `antd-${antdComponentMatch[1]}`
+          }
+
+          const rcPackageMatch = id.match(/\/(rc-[^/]+)/)
+          if (rcPackageMatch?.[1]) {
+            return rcPackageMatch[1]
+          }
+
+          if (id.includes('/@ant-design/')) {
+            return 'ant-design-vendor'
+          }
+
+          if (id.includes('/dayjs/')) {
+            return 'dayjs-vendor'
           }
 
           return 'vendor'

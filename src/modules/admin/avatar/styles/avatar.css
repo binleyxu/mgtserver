@@ -1,0 +1,5 @@
+.avatar-table-image {
+  border-radius: 6px;
+  border: 1px solid #d8e2e8;
+  object-fit: cover;
+}

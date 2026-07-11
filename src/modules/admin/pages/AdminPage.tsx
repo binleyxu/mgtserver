@@ -15,19 +15,19 @@ import {
   getMenuList,
 } from '../services/adminService'
 import { createRole, deleteRole, getRoleList, getRoleMenu, updateRole, updateRoleMenu } from '../role'
-import { Table, Button, Space, Card, Layout, Popconfirm, message, Modal, Form, Input, Select, Menu, Dropdown, Tooltip } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, SettingOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons'
+import { Table, Button, Space, Card, Popconfirm, message, Modal, Form, Input, Select, Tooltip } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { AvatarUploadModal, resolveAvatarUrl } from '../avatar'
 import '../styles/AdminPage.css'
-import '../../index/styles/IndexPage.css'
+import '../avatar/styles/avatar.css'
 import { formatDateDMY } from '../../../utils/dateTimeFormat'
-import countryGlobeIcon from '../../../assets/country-globe.svg?url'
-import regionManagementIcon from '../../../assets/region-management.svg?url'
 import roleManagementActionIcon from '../../../assets/role-management-action.svg?url'
-import { clearAdminToken, getAdminIdFromToken } from '@/auth'
+import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
 import { RoleFormModal, RoleMenuModal, RolePanelModal } from '../role'
+import { AdminScaffold } from '@/layouts/AdminScaffold'
+import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
-const { Header, Content, Sider } = Layout
 const { Option } = Select
 
 /**
@@ -47,6 +47,7 @@ export const AdminPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false)
   const [form] = Form.useForm()
 
   const [rolePanelVisible, setRolePanelVisible] = useState(false)
@@ -65,43 +66,28 @@ export const AdminPage: React.FC = () => {
   const [openKeys, setOpenKeys] = useState<string[]>(['setting', 'region-management'])
   const [currentAdminName, setCurrentAdminName] = useState<string>('管理员')
 
-
   const handleLogout = () => {
     clearAdminToken()
     navigate('/login', { replace: true })
   }
 
-  const menuItems = [
-    { key: 'home', icon: <DashboardOutlined />, label: '主页', onClick: () => navigate('/index') },
-    { key: 'admin', icon: <UserOutlined />, label: '管理员', onClick: () => navigate('/admin') },
-    { key: 'user', icon: <UserOutlined />, label: '用户', onClick: () => navigate('/user') },
-    {
-      key: 'setting',
-      icon: <SettingOutlined />,
-      label: '设置',
-      children: [
-        {
-          key: 'menu-management',
-          icon: <SettingOutlined />,
-          label: '菜单管理',
-          onClick: () => navigate('/setting/menu'),
-        },
-        {
-          key: 'region-management',
-          icon: <img src={regionManagementIcon} alt="" width={14} height={14} style={{ filter: 'invert(1)' }} />,
-          label: '地区管理',
-          children: [
-            {
-              key: 'country',
-              icon: <img src={countryGlobeIcon} alt="" width={14} height={14} style={{ filter: 'invert(1)' }} />,
-              label: '国家',
-              onClick: () => navigate('/setting/region/country'),
-            },
-          ],
-        },
-      ],
-    },
-  ]
+  const role = getAdminRoleFromToken()
+  const canAccessPrivilegedModules = canAccessAdminAndSettings(role)
+
+  const menuItems = buildAdminMenuItems({
+    canAccessPrivilegedModules,
+    includeUser: true,
+    navigate,
+  })
+
+  const isNotFoundError = (value: unknown): boolean => {
+    if (!(value instanceof Error)) {
+      return false
+    }
+
+    const text = value.message.toLowerCase()
+    return text.includes('404') || text.includes('not found')
+  }
 
   const loadAdmins = async () => {
     setLoading(true)
@@ -125,6 +111,11 @@ export const AdminPage: React.FC = () => {
       const response = await getRoleList()
       setRoles(response.items || [])
     } catch (err) {
+      if (isNotFoundError(err)) {
+        // Role endpoints may be unavailable in some environments; fall back silently.
+        setRoles([])
+        return
+      }
       const messageText = err instanceof Error ? err.message : '加载角色失败'
       message.error(messageText)
     } finally {
@@ -182,6 +173,43 @@ export const AdminPage: React.FC = () => {
       password: undefined,
     })
     setIsModalVisible(true)
+  }
+
+  const openAvatarModal = () => {
+    if (!editingAdmin?.id) {
+      message.warning('请先选择已保存的管理员再编辑头像')
+      return
+    }
+    setAvatarModalOpen(true)
+  }
+
+  const handleAvatarSaved = (payload: {
+    adminId: string
+    avatarSmallUrl: string
+    avatarLargeUrl: string
+    avatarVersion?: number
+    avatarUpdatedAt?: string
+  }) => {
+    setAdmins((prev) => prev.map((item) => (item.id === payload.adminId
+      ? {
+          ...item,
+          avatarSmallUrl: payload.avatarSmallUrl,
+          avatarLargeUrl: payload.avatarLargeUrl,
+          avatarVersion: payload.avatarVersion ?? null,
+          avatarUpdatedAt: payload.avatarUpdatedAt ?? null,
+        }
+      : item)))
+
+    setEditingAdmin((prev) => {
+      if (!prev || prev.id !== payload.adminId) return prev
+      return {
+        ...prev,
+        avatarSmallUrl: payload.avatarSmallUrl,
+        avatarLargeUrl: payload.avatarLargeUrl,
+        avatarVersion: payload.avatarVersion ?? null,
+        avatarUpdatedAt: payload.avatarUpdatedAt ?? null,
+      }
+    })
   }
 
   const handleSubmit = async () => {
@@ -327,6 +355,7 @@ export const AdminPage: React.FC = () => {
 
   const handleCancel = () => {
     setIsModalVisible(false)
+    setAvatarModalOpen(false)
   }
 
   const handleRoleCancel = () => {
@@ -345,6 +374,21 @@ export const AdminPage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 100,
+    },
+    {
+      title: '头像',
+      dataIndex: 'avatarSmallUrl',
+      key: 'avatarSmallUrl',
+      width: 90,
+      render: (avatarSmallUrl: string | null | undefined, record: Admin) => (
+        <img
+          src={resolveAvatarUrl(avatarSmallUrl || record.avatarLargeUrl)}
+          alt={`${record.username} 头像`}
+          width={32}
+          height={32}
+          className="avatar-table-image"
+        />
+      ),
     },
     {
       title: '用户名',
@@ -424,85 +468,41 @@ export const AdminPage: React.FC = () => {
   ]
 
   return (
-    <Layout className="index-page-layout">
-      <Header className="index-header">
-        <div className="header-left">
-          <h1 className="header-title">管理后台</h1>
-        </div>
-        <div className="header-right">
-          <Dropdown
-            menu={{
-              items: [
-                { key: 'logout', icon: <LogoutOutlined />, label: '登出', onClick: handleLogout },
-              ],
-            }}
-          >
-            <div
-              style={{
-                color: '#1f1f1f',
-                background: 'rgba(255, 255, 255, 0.92)',
-                borderRadius: 16,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 32,
-                padding: '0 10px',
-                cursor: 'pointer',
-              }}
-            >
-              <UserOutlined />
-              <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                {currentAdminName || '管理员'}
-              </span>
-            </div>
-          </Dropdown>
-        </div>
-      </Header>
-
-      <Layout className="index-layout-container">
-        <Sider
-          collapsible
-          collapsed={collapsed}
-          onCollapse={setCollapsed}
-          className="index-sider"
-          width={220}
+    <AdminScaffold
+      currentAdminName={currentAdminName}
+      collapsed={collapsed}
+      onCollapse={setCollapsed}
+      selectedKeys={[selectedKey]}
+      openKeys={openKeys}
+      onOpenChange={setOpenKeys}
+      menuItems={menuItems}
+      onLogout={handleLogout}
+      contentClassName="admin-content"
+    >
+      <div className="admin-page">
+        <Card
+          title={<div className="admin-title">管理员列表</div>}
+          extra={
+            <Space>
+              <Tooltip title="角色管理">
+                <Button
+                  shape="circle"
+                  icon={<img src={roleManagementActionIcon} alt="" width={16} height={16} />}
+                  onClick={openRolePanel}
+                />
+              </Tooltip>
+              <Tooltip title="新增管理员">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<PlusOutlined />}
+                  onClick={openCreateModal}
+                />
+              </Tooltip>
+            </Space>
+          }
+          className="admin-card"
         >
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            openKeys={openKeys}
-            onOpenChange={setOpenKeys}
-            items={menuItems}
-          />
-        </Sider>
-
-        <Layout>
-          <Content className="index-content admin-content">
-            <div className="admin-page">
-              <Card
-                title={<div className="admin-title">管理员列表</div>}
-                extra={
-                  <Space>
-                    <Tooltip title="角色管理">
-                      <Button
-                        shape="circle"
-                        icon={<img src={roleManagementActionIcon} alt="" width={16} height={16} />}
-                        onClick={openRolePanel}
-                      />
-                    </Tooltip>
-                    <Tooltip title="新增管理员">
-                      <Button
-                        type="primary"
-                        shape="circle"
-                        icon={<PlusOutlined />}
-                        onClick={openCreateModal}
-                      />
-                    </Tooltip>
-                  </Space>
-                }
-                className="admin-card"
-              >
                 {error && (
                   <div style={{
                     padding: '12px',
@@ -607,8 +607,35 @@ export const AdminPage: React.FC = () => {
                     >
                       <Input.Password placeholder={editingAdmin ? '留空则不修改密码' : '请输入密码'} />
                     </Form.Item>
+
+                    <Form.Item label="头像设置">
+                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                        {editingAdmin ? (
+                          <Space size={12}>
+                            <img
+                              src={resolveAvatarUrl(editingAdmin.avatarSmallUrl || editingAdmin.avatarLargeUrl)}
+                              alt="当前头像"
+                              width={32}
+                              height={32}
+                              className="avatar-table-image"
+                            />
+                            <Button onClick={openAvatarModal}>编辑头像</Button>
+                          </Space>
+                        ) : (
+                          <span style={{ color: '#6e8090', fontSize: 12 }}>创建管理员后可编辑头像，默认显示灰色头像</span>
+                        )}
+                      </Space>
+                    </Form.Item>
                   </Form>
                 </Modal>
+
+                <AvatarUploadModal
+                  open={avatarModalOpen}
+                  adminId={editingAdmin?.id}
+                  currentAvatarSmallUrl={editingAdmin?.avatarSmallUrl}
+                  onClose={() => setAvatarModalOpen(false)}
+                  onSaved={handleAvatarSaved}
+                />
 
                 <RoleMenuModal
                   open={roleMenuModalVisible}
@@ -632,12 +659,9 @@ export const AdminPage: React.FC = () => {
                   onOk={handleRoleSubmit}
                   onCancel={handleRoleCancel}
                 />
-              </Card>
-            </div>
-          </Content>
-        </Layout>
-      </Layout>
-    </Layout>
+        </Card>
+      </div>
+    </AdminScaffold>
   )
 }
 
