@@ -3,26 +3,20 @@ import type {
   Admin,
   AdminListResponse,
   UpdateAdminRequest,
-  Role,
-  UpdateRoleRequest,
   MenuItemInfo,
 } from '../types/admin.types'
+import type { Role, UpdateRoleRequest } from '../role'
 import {
   getAdminList,
   deleteAdmin,
   createAdmin,
   updateAdmin,
-  getRoleList,
-  createRole,
-  updateRole,
-  deleteRole,
   getAdminDetail,
   getMenuList,
-  getRoleMenu,
-  updateRoleMenu,
 } from '../services/adminService'
-import { Table, Button, Space, Card, Layout, Popconfirm, message, Modal, Form, Input, Select, Menu, Dropdown, Tooltip, Checkbox } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, SettingOutlined, DashboardOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons'
+import { createRole, deleteRole, getRoleList, getRoleMenu, updateRole, updateRoleMenu } from '../role'
+import { Table, Button, Space, Card, Layout, Popconfirm, message, Modal, Form, Input, Select, Menu, Dropdown, Tooltip } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, SettingOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import '../styles/AdminPage.css'
 import '../../index/styles/IndexPage.css'
@@ -31,6 +25,7 @@ import countryGlobeIcon from '../../../assets/country-globe.svg?url'
 import regionManagementIcon from '../../../assets/region-management.svg?url'
 import roleManagementActionIcon from '../../../assets/role-management-action.svg?url'
 import { clearAdminToken, getAdminIdFromToken } from '@/auth'
+import { RoleFormModal, RoleMenuModal, RolePanelModal } from '../role'
 
 const { Header, Content, Sider } = Layout
 const { Option } = Select
@@ -428,92 +423,6 @@ export const AdminPage: React.FC = () => {
     },
   ]
 
-  const roleColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-    },
-    {
-      title: '角色名',
-      dataIndex: 'role_name',
-      key: 'role_name',
-      width: 220,
-    },
-    {
-      title: '状态',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      width: 100,
-      render: (isActive: boolean) => (
-        <span style={{
-          color: isActive ? '#52c41a' : '#f5222d',
-          fontWeight: 600,
-        }}>
-          {isActive ? '启用' : '禁用'}
-        </span>
-      ),
-    },
-    {
-      title: '更新时间',
-      dataIndex: 'updated_at',
-      key: 'updated_at',
-      width: 240,
-      render: (date: string) => formatDateDMY(date),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 180,
-      render: (_: unknown, record: Role) => {
-        const isSeedRole = ['super_admin', 'admin', 'ops_admin', 'viewer'].includes(record.role_name)
-        return (
-          <Space size="small">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => openEditRoleModal(record)}
-              aria-label="编辑角色"
-            />
-            <Button
-              size="small"
-              icon={<FileSearchOutlined />}
-              onClick={() => openRoleMenuModal(record)}
-              aria-label="配置角色菜单"
-            />
-            {isSeedRole ? (
-              <Button
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                disabled
-                title="系统初始角色不建议删除"
-                aria-label="删除角色"
-              />
-            ) : (
-              <Popconfirm
-                title="删除角色"
-                description="删除后会自动迁移引用该角色的管理员，确定继续？"
-                onConfirm={() => handleDeleteRole(record)}
-                okText="确认"
-                cancelText="取消"
-              >
-                <Button
-                  danger
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  aria-label="删除角色"
-                />
-              </Popconfirm>
-            )}
-          </Space>
-        )
-      },
-    },
-  ]
-
   return (
     <Layout className="index-page-layout">
       <Header className="index-header">
@@ -621,26 +530,16 @@ export const AdminPage: React.FC = () => {
                   }}
                 />
 
-                <Modal
-                  title="角色管理"
+                <RolePanelModal
                   open={rolePanelVisible}
+                  loading={roleLoading}
+                  roles={visibleRoles}
                   onCancel={() => setRolePanelVisible(false)}
-                  footer={null}
-                  width={860}
-                >
-                  <div style={{ marginBottom: 16 }}>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={openCreateRoleModal}>
-                      新增角色
-                    </Button>
-                  </div>
-                  <Table
-                    columns={roleColumns}
-                    dataSource={visibleRoles}
-                    loading={roleLoading}
-                    rowKey={(record: Role) => record.id}
-                    pagination={false}
-                  />
-                </Modal>
+                  onCreateRole={openCreateRoleModal}
+                  onEditRole={openEditRoleModal}
+                  onDeleteRole={handleDeleteRole}
+                  onConfigRoleMenu={openRoleMenuModal}
+                />
 
                 <Modal
                   title={editingAdmin ? '编辑管理员' : '新增管理员'}
@@ -711,70 +610,28 @@ export const AdminPage: React.FC = () => {
                   </Form>
                 </Modal>
 
-                <Modal
-                  title={editingRoleMenus ? `角色菜单配置 - ${editingRoleMenus.role_name}` : '角色菜单配置'}
+                <RoleMenuModal
                   open={roleMenuModalVisible}
+                  confirmLoading={roleMenuSaving}
+                  roleName={editingRoleMenus?.role_name}
+                  menuCatalog={menuCatalog}
+                  selectedRoleMenuIds={selectedRoleMenuIds}
+                  onChangeSelectedIds={setSelectedRoleMenuIds}
                   onOk={handleSaveRoleMenus}
                   onCancel={() => {
                     setRoleMenuModalVisible(false)
                     setEditingRoleMenus(null)
                   }}
-                  confirmLoading={roleMenuSaving}
-                  okText="保存"
-                  cancelText="取消"
-                  width={720}
-                >
-                  <div style={{ marginBottom: 12, color: '#8c8c8c' }}>
-                    勾选该角色可见的左侧菜单（menu_id）
-                  </div>
-                  <Checkbox.Group
-                    style={{ width: '100%' }}
-                    value={selectedRoleMenuIds}
-                    onChange={(checkedValues) => setSelectedRoleMenuIds((checkedValues as number[]).map((v) => Number(v)))}
-                  >
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                      {menuCatalog.map((menu) => (
-                        <label key={menu.id} style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 10px' }}>
-                          <Checkbox value={menu.id} />
-                          <span style={{ fontWeight: 600 }}>{menu.id}</span>
-                          <span>{menu.label}</span>
-                          <span style={{ color: '#8c8c8c', marginLeft: 'auto' }}>{menu.path || '-'}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </Checkbox.Group>
-                </Modal>
+                />
 
-                <Modal
-                  title={editingRole ? '编辑角色' : '新增角色'}
+                <RoleFormModal
                   open={roleModalVisible}
+                  confirmLoading={roleConfirmLoading}
+                  editingRole={editingRole}
+                  form={roleForm}
                   onOk={handleRoleSubmit}
                   onCancel={handleRoleCancel}
-                  confirmLoading={roleConfirmLoading}
-                  okText={editingRole ? '更新' : '创建'}
-                  cancelText="取消"
-                >
-                  <Form form={roleForm} layout="vertical">
-                    <Form.Item
-                      name="role_name"
-                      label="角色名"
-                      rules={[{ required: true, message: '请输入角色名' }]}
-                    >
-                      <Input placeholder="请输入角色名" />
-                    </Form.Item>
-                    <Form.Item
-                      name="is_active"
-                      label="状态"
-                      initialValue={true}
-                      rules={[{ required: true, message: '请选择状态' }]}
-                    >
-                      <Select>
-                        <Option value={true}>启用</Option>
-                        <Option value={false}>禁用</Option>
-                      </Select>
-                    </Form.Item>
-                  </Form>
-                </Modal>
+                />
               </Card>
             </div>
           </Content>

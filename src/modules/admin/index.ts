@@ -9,11 +9,20 @@ export {
   deleteAdmin,
   getMenuList,
   getCurrentAdminMenu,
-  getRoleMenu,
-  updateRoleMenu,
   createMenu,
   updateMenu,
 } from './services/adminService'
+
+export {
+  getRoleList,
+  createRole,
+  updateRole,
+  deleteRole,
+  getRoleMenu,
+  updateRoleMenu,
+} from './role'
+
+export { RolePage } from './role'
 
 export type {
   Admin,
@@ -28,3 +37,10 @@ export type {
   MenuCreateRequest,
   MenuUpdateRequest,
 } from './types/admin.types'
+
+export type {
+  Role,
+  RoleListResponse,
+  CreateRoleRequest,
+  UpdateRoleRequest,
+} from './role'

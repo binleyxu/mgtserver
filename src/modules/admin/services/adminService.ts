@@ -20,10 +20,6 @@ import type {
   CreateAdminRequest,
   UpdateAdminRequest,
   ApiResponse,
-  Role,
-  RoleListResponse,
-  CreateRoleRequest,
-  UpdateRoleRequest,
   MenuItemInfo,
   MenuListResponse,
   RoleMenuResponse,
@@ -59,16 +55,6 @@ function mapAdminItem(item: any): Admin {
 
 function toText(value: unknown): string {
   return typeof value === 'string' ? value : value != null ? String(value) : ''
-}
-
-function mapRoleItem(item: Record<string, unknown>): Role {
-  return {
-    id: Number(item.id),
-    role_name: toText(item.role_name),
-    is_active: Boolean(item.is_active),
-    created_at: toText(item.created_at),
-    updated_at: toText(item.updated_at),
-  }
 }
 
 function mapMenuItem(item: Record<string, unknown>): MenuItemInfo {
@@ -205,80 +191,6 @@ export async function getAdminByUsername(username: string): Promise<Admin | null
 }
 
 /**
- * 获取角色列表
- */
-export async function getRoleList(): Promise<RoleListResponse> {
-  const response = await fetch(API_ENDPOINTS.ADMIN.ROLE_LIST, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to fetch role list: HTTP ${response.status}`))
-  }
-
-  const payload = await response.json()
-  const body = ensureEnvelopePayload(payload, '加载角色列表失败')
-  const items = readEnvelopeItems(body)
-
-  return {
-    total: readEnvelopeTotal(body, items.length),
-    items: items.map((item) => mapRoleItem(toRecord(item))),
-  }
-}
-
-export async function createRole(data: CreateRoleRequest): Promise<Role> {
-  const response = await fetch(API_ENDPOINTS.ADMIN.ROLE_CREATE, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to create role: HTTP ${response.status}`))
-  }
-
-  const payload = await response.json()
-  const body = ensureEnvelopePayload(payload, '创建角色失败')
-  return mapRoleItem(readEnvelopeDataObject(body) ?? body)
-}
-
-export async function updateRole(roleId: number, data: UpdateRoleRequest): Promise<Role> {
-  const response = await fetch(API_ENDPOINTS.ADMIN.ROLE_UPDATE(roleId), {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to update role: HTTP ${response.status}`))
-  }
-
-  const payload = await response.json()
-  const body = ensureEnvelopePayload(payload, '更新角色失败')
-  return mapRoleItem(readEnvelopeDataObject(body) ?? body)
-}
-
-export async function deleteRole(roleId: number): Promise<void> {
-  const response = await fetch(API_ENDPOINTS.ADMIN.ROLE_DELETE(roleId), {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to delete role: HTTP ${response.status}`))
-  }
-}
-
-/**
  * 创建 admin
  */
 export async function createAdmin(
@@ -411,40 +323,6 @@ export async function getCurrentAdminMenu(): Promise<RoleMenuResponse> {
   const payload = await response.json()
   return mapRoleMenuPayload(payload, '加载当前角色菜单失败')
 }
-
-export async function getRoleMenu(roleId: number): Promise<RoleMenuResponse> {
-  const response = await fetch(API_ENDPOINTS.MENU.ROLE_MENU(roleId), {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to fetch role menu: HTTP ${response.status}`))
-  }
-
-  const payload = await response.json()
-  return mapRoleMenuPayload(payload, '加载角色菜单失败')
-}
-
-export async function updateRoleMenu(roleId: number, menuIds: number[]): Promise<RoleMenuResponse> {
-  const response = await fetch(API_ENDPOINTS.MENU.ROLE_MENU(roleId), {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ menu_ids: menuIds }),
-  })
-
-  handleAuthResponse(response)
-
-  if (!response.ok) {
-    throw new Error(await readHttpErrorMessage(response, `Failed to update role menu: HTTP ${response.status}`))
-  }
-
-  const payload = await response.json()
-  return mapRoleMenuPayload(payload, '保存角色菜单失败')
-}
-
 
 export async function createMenu(data: MenuCreateRequest): Promise<MenuItemInfo> {
   const response = await fetch(API_ENDPOINTS.MENU.CREATE, {
