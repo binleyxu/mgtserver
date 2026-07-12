@@ -1,9 +1,10 @@
 export const ROLE_VIEWER = "viewer"
 export const ROLE_ADMIN = "admin"
+export const ROLE_OPS_ADMIN = "ops_admin"
 export const ROLE_SUPER_ADMIN = "super_admin"
 export const ROLE_USER = "user"
 
-export const READ_ROLES = [ROLE_VIEWER, ROLE_ADMIN, ROLE_SUPER_ADMIN] as const
+export const READ_ROLES = [ROLE_VIEWER, ROLE_OPS_ADMIN, ROLE_ADMIN, ROLE_SUPER_ADMIN] as const
 export const WRITE_ROLES = [ROLE_ADMIN, ROLE_SUPER_ADMIN] as const
 export const ALL_ROLES = [...READ_ROLES, ROLE_USER] as const
 
@@ -25,5 +26,5 @@ export function isUserRole(role?: string | null): boolean {
 }
 
 export function canAccessAdminAndSettings(role?: string | null): boolean {
-  return Boolean(role && role !== ROLE_USER)
+  return hasWritePermission(role)
 }

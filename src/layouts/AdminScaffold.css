@@ -137,20 +137,104 @@
 }
 
 .admin-scaffold-user-trigger {
-  border: 1px solid #d7e1e7;
-  background: #f6fbfd;
+  border: 0px !important;
+  background: transparent;
   color: #1f2f3d;
-  border-radius: 12px;
-  width: 34px;
-  height: 34px;
-  display: inline-grid;
-  place-items: center;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  padding: 0;
+  outline: none;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
 }
 
 .admin-scaffold-user-trigger:hover {
-  background: #eef5f7;
-  border-color: #c7d7df;
+  background: transparent;
+}
+
+.admin-scaffold-user-trigger:focus,
+.admin-scaffold-user-trigger:focus-visible,
+.admin-scaffold-user-trigger:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-scaffold-user-avatar {
+  background: #dce7ec;
+  color: #334553;
+}
+
+.admin-scaffold-user-avatar-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 0 !important;
+  outline: none;
+  box-shadow: none !important;
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+.admin-scaffold-user-avatar-fallback-image {
+  background: #ffffff;
+}
+
+.admin-scaffold-user-avatar-fallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #dce7ec;
+  color: #2f4250;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-scaffold-dropdown-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-scaffold-dropdown-avatar-image {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 0 !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.admin-scaffold-dropdown-avatar-fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #dce7ec;
+  color: #2f4250;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-scaffold-dropdown-profile-name {
+  font-weight: 600;
 }
 
 .admin-scaffold-sider {

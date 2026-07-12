@@ -37,7 +37,7 @@ playwright-report
 .oxlintrc.json
 .wget-hsts
 =1000
-etm-system.bak-*/
+mgtserver.bak-*/
 
 # Editor directories and files
 .vscode/*

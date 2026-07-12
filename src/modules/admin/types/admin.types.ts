@@ -41,7 +41,7 @@ export interface CreateAdminRequest {
   username: string;
   name: string;
   email: string;
-  role_id: number;
+  role_id?: number;
   role?: string;
   password: string;
 }

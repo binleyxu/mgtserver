@@ -1,5 +1,5 @@
 import { SESSION_TIMEOUT_SECONDS, SESSION_WARNING_SECONDS } from '../../../config'
-import type { AdminSessionMeta } from '../types/auth.types'
+import type { AdminSessionActivityEvent, AdminSessionMeta, AdminSessionRefreshRequest } from '../types/auth.types'
 
 export const ADMIN_TOKEN_STORAGE_KEY = 'admin_token'
 export const ADMIN_SESSION_STARTED_AT_STORAGE_KEY = 'admin_session_started_at'
@@ -7,6 +7,10 @@ export const ADMIN_SESSION_LAST_ACTIVITY_AT_STORAGE_KEY = 'admin_session_last_ac
 export const ADMIN_SESSION_EXPIRES_AT_STORAGE_KEY = 'admin_session_expires_at'
 export const ADMIN_SESSION_WARNING_SECONDS_STORAGE_KEY = 'admin_session_warning_before_seconds'
 export const ADMIN_SESSION_SERVER_OFFSET_SECONDS_STORAGE_KEY = 'admin_session_server_offset_seconds'
+export const ADMIN_SESSION_ACTIVITY_EVENTS_STORAGE_KEY = 'admin_session_activity_events'
+export const ADMIN_DISPLAY_NAME_STORAGE_KEY = 'admin_display_name'
+export const ADMIN_DISPLAY_AVATAR_URL_STORAGE_KEY = 'admin_display_avatar_url'
+const ADMIN_SESSION_ACTIVITY_MAX_ITEMS = 5
 
 function nowMs(): number {
   return Date.now()
@@ -15,6 +19,8 @@ function nowMs(): number {
 function isBrowser(): boolean {
   return typeof window !== 'undefined'
 }
+
+let unauthorizedRedirectTimestamp = 0
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const parts = token.split('.')
@@ -91,6 +97,39 @@ export function getAdminRoleFromToken(token?: string | null): string | null {
   return typeof payload.role === 'string' ? payload.role : null
 }
 
+export function getAdminDisplayName(): string {
+  if (!isBrowser()) {
+    return ''
+  }
+
+  return window.localStorage.getItem(ADMIN_DISPLAY_NAME_STORAGE_KEY) || ''
+}
+
+export function getAdminDisplayAvatarUrl(): string {
+  if (!isBrowser()) {
+    return ''
+  }
+
+  return window.localStorage.getItem(ADMIN_DISPLAY_AVATAR_URL_STORAGE_KEY) || ''
+}
+
+export function setAdminDisplayProfile(name?: string | null, avatarUrl?: string | null): void {
+  if (!isBrowser()) {
+    return
+  }
+
+  const normalizedName = typeof name === 'string' ? name.trim() : ''
+  const normalizedAvatarUrl = typeof avatarUrl === 'string' ? avatarUrl.trim() : ''
+
+  if (normalizedName) {
+    window.localStorage.setItem(ADMIN_DISPLAY_NAME_STORAGE_KEY, normalizedName)
+  }
+
+  if (normalizedAvatarUrl) {
+    window.localStorage.setItem(ADMIN_DISPLAY_AVATAR_URL_STORAGE_KEY, normalizedAvatarUrl)
+  }
+}
+
 export function setAdminToken(token: string, sessionMeta?: AdminSessionMeta): void {
   if (!isBrowser()) {
     return
@@ -105,7 +144,10 @@ export function clearAdminToken(): void {
     return
   }
   window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY)
+  window.localStorage.removeItem(ADMIN_DISPLAY_NAME_STORAGE_KEY)
+  window.localStorage.removeItem(ADMIN_DISPLAY_AVATAR_URL_STORAGE_KEY)
   clearAdminSessionTimestamps()
+  clearAdminSessionActivityEvents()
   clearAdminSessionMeta()
 }
 
@@ -162,6 +204,79 @@ export function clearAdminSessionTimestamps(): void {
   }
   window.localStorage.removeItem(ADMIN_SESSION_STARTED_AT_STORAGE_KEY)
   window.localStorage.removeItem(ADMIN_SESSION_LAST_ACTIVITY_AT_STORAGE_KEY)
+}
+
+export function getAdminSessionActivityEvents(): AdminSessionActivityEvent[] {
+  if (!isBrowser()) {
+    return []
+  }
+
+  const raw = window.localStorage.getItem(ADMIN_SESSION_ACTIVITY_EVENTS_STORAGE_KEY)
+  if (!raw) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => ({
+        type: typeof item.type === 'string' ? item.type : 'unknown',
+        ts: typeof item.ts === 'number' && Number.isFinite(item.ts) ? Math.floor(item.ts) : nowMs(),
+        route: typeof item.route === 'string' ? item.route : undefined,
+      }))
+      .slice(-ADMIN_SESSION_ACTIVITY_MAX_ITEMS)
+  } catch {
+    return []
+  }
+}
+
+export function clearAdminSessionActivityEvents(): void {
+  if (!isBrowser()) {
+    return
+  }
+  window.localStorage.removeItem(ADMIN_SESSION_ACTIVITY_EVENTS_STORAGE_KEY)
+}
+
+export function recordAdminSessionActivityEvent(type: string, route?: string): void {
+  if (!isBrowser()) {
+    return
+  }
+
+  const normalizedType = (type || 'unknown').trim() || 'unknown'
+  const value = nowMs()
+  markAdminSessionActivity(value)
+
+  const current = getAdminSessionActivityEvents()
+  current.push({
+    type: normalizedType,
+    ts: value,
+    route: route?.trim() || undefined,
+  })
+
+  try {
+    window.localStorage.setItem(
+      ADMIN_SESSION_ACTIVITY_EVENTS_STORAGE_KEY,
+      JSON.stringify(current.slice(-ADMIN_SESSION_ACTIVITY_MAX_ITEMS))
+    )
+  } catch {
+    // Ignore write errors: activity logging should never break auth flow.
+  }
+}
+
+export function buildAdminSessionRefreshSnapshot(): AdminSessionRefreshRequest {
+  const recent = getAdminSessionActivityEvents()
+  const latest = recent.length > 0 ? recent[recent.length - 1] : null
+
+  return {
+    latest_activity_ts: latest?.ts,
+    latest_activity_type: latest?.type,
+    recent_activities: recent,
+  }
 }
 
 function readNumberLike(value: unknown): number | null {
@@ -320,6 +435,15 @@ export function handleUnauthorizedResponse(response: Response): void {
     return
   }
 
+  const now = Date.now()
+  // Avoid redirect storms when multiple stale in-flight requests fail together.
+  if (now - unauthorizedRedirectTimestamp < 3000) {
+    return
+  }
+  unauthorizedRedirectTimestamp = now
+
   clearAdminToken()
-  window.location.href = '/login'
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login')
+  }
 }

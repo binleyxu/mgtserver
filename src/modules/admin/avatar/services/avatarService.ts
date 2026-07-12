@@ -21,17 +21,27 @@ export async function uploadAdminAvatar({ adminId, file, crop, imageMeta }: Uplo
   const authHeaders = buildAuthHeaders()
   const { 'Content-Type': _, ...headersWithoutContentType } = authHeaders
 
-  const response = await fetch(API_ENDPOINTS.ADMIN.AVATAR_UPLOAD(normalizedAdminId), {
-    method: 'POST',
-    headers: headersWithoutContentType,
-    body: formData,
-  })
+  const primaryUrl = API_ENDPOINTS.ADMIN.AVATAR_UPLOAD(normalizedAdminId)
+  const fallbackUrl = primaryUrl.startsWith('/api/') ? primaryUrl.replace('/api/', '/') : primaryUrl
+
+  const uploadOnce = async (url: string) => {
+    return fetch(url, {
+      method: 'POST',
+      headers: headersWithoutContentType,
+      body: formData,
+    })
+  }
+
+  let response = await uploadOnce(primaryUrl)
+  if (response.status === 404 && fallbackUrl !== primaryUrl) {
+    response = await uploadOnce(fallbackUrl)
+  }
 
   handleUnauthorizedResponse(response)
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error('头像上传接口未就绪（404）：请确认后端已实现 POST /admin/{id}/avatar')
+      throw new Error('头像上传接口未就绪（404）：请确认后端已实现 POST /admin/{id}/avatar（或 /api/admin/{id}/avatar）')
     }
     throw new Error(await readHttpErrorMessage(response, `Failed to upload avatar: HTTP ${response.status}`))
   }

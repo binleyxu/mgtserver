@@ -28,7 +28,7 @@ export function buildAdminMenuItems({
     baseItems.push({
       key: 'admin',
       icon: <img src={adminIcon} alt="" width={16} height={16} className="admin-menu-icon" />,
-      label: '管理员',
+      label: '列表',
       onClick: () => navigate('/admin'),
     })
   }

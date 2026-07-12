@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-QTnfLwEv.js";import{nn as t}from"./ant-design-vendor-D5p2LsVm.js";var n=e(t()).createContext({});export{n as t};

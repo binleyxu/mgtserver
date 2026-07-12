@@ -4,8 +4,16 @@ import { Table, Card, message, Button, Space, Modal, Form, Input, InputNumber, S
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined } from '@ant-design/icons'
 
-import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
-import { createMenu, getAdminDetail, getMenuList, updateMenu } from '../../../admin'
+import {
+  canAccessAdminAndSettings,
+  clearAdminToken,
+  getAdminDisplayAvatarUrl,
+  getAdminDisplayName,
+  getAdminIdFromToken,
+  getAdminRoleFromToken,
+  setAdminDisplayProfile,
+} from '@/auth'
+import { createMenu, getAdminList, getMenuList, updateMenu } from '../../../admin'
 import type { MenuCreateRequest, MenuItemInfo, MenuUpdateRequest } from '../../../admin'
 import { AdminScaffold } from '@/layouts/AdminScaffold'
 import { buildAdminMenuItems } from '@/layouts/adminNavigation'
@@ -14,7 +22,8 @@ export const MenuManagementPage: React.FC = () => {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [openKeys, setOpenKeys] = useState<string[]>(['setting', 'region-management'])
-  const [currentAdminName, setCurrentAdminName] = useState<string>('管理员')
+  const [currentAdminName, setCurrentAdminName] = useState<string>(getAdminDisplayName() || '未加载姓名')
+  const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = useState<string>(getAdminDisplayAvatarUrl())
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<MenuItemInfo[]>([])
   const [modalOpen, setModalOpen] = useState(false)
@@ -33,16 +42,24 @@ export const MenuManagementPage: React.FC = () => {
   const loadCurrentAdminName = async () => {
     const adminId = getAdminIdFromToken()
     if (!adminId) {
-      setCurrentAdminName('管理员')
+      setCurrentAdminName('未加载姓名')
+      setCurrentAdminAvatarUrl('')
       return
     }
 
     try {
-      const response = await getAdminDetail(adminId)
-      const username = response.data?.username || ''
-      setCurrentAdminName(username || '管理员')
+      const response = await getAdminList(1, 1000)
+      const adminKey = String(adminId)
+      const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
+      if (!matched) {
+        return
+      }
+      const username = matched?.username || ''
+      setCurrentAdminName(username || '未加载姓名')
+      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
+      setAdminDisplayProfile(username || undefined, matched?.avatarSmallUrl || undefined)
     } catch {
-      setCurrentAdminName('管理员')
+      // Keep cached display profile when network request fails.
     }
   }
 
@@ -170,6 +187,7 @@ export const MenuManagementPage: React.FC = () => {
   return (
     <AdminScaffold
       currentAdminName={currentAdminName}
+      currentAdminAvatarUrl={currentAdminAvatarUrl}
       collapsed={collapsed}
       onCollapse={setCollapsed}
       selectedKeys={['menu-management']}

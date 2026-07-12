@@ -11,6 +11,22 @@ import {
 } from '@/utils/apiSemantics'
 import type { UserListResponse, UserProfile } from '../types/user.types'
 
+const USER_LIST_REQUEST_TIMEOUT_MS = 8000
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } finally {
+    globalThis.clearTimeout(timeoutId)
+  }
+}
+
 function normalizeUser(item: Record<string, unknown>): UserProfile {
   const rawId = item.id ?? item.user_id ?? item.uid
   const statusValue = item.status
@@ -31,20 +47,29 @@ function normalizeUser(item: Record<string, unknown>): UserProfile {
   }
 }
 
-export async function getUserList(): Promise<UserListResponse> {
+export async function getUserList(page: number = 1, pageSize: number = 20): Promise<UserListResponse> {
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 20
   const endpoints = [
-    { url: API_ENDPOINTS.USER.LIST_ADMIN, source: 'admin' as const },
-    { url: API_ENDPOINTS.USER.LIST_LEGACY, source: 'legacy' as const },
+    { url: API_ENDPOINTS.USER.LIST_LEGACY(safePage, safePageSize), source: 'legacy' as const },
   ]
 
   let lastError: Error | null = null
 
   for (let index = 0; index < endpoints.length; index += 1) {
     const target = endpoints[index]
-    const response = await fetch(target.url, {
-      method: 'GET',
-      headers: buildAuthHeaders(),
-    })
+    let response: Response
+    try {
+      response = await fetchWithTimeout(target.url, {
+        method: 'GET',
+        headers: buildAuthHeaders(),
+      }, USER_LIST_REQUEST_TIMEOUT_MS)
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('用户数据查询超时，请稍后重试')
+      }
+      throw error
+    }
 
     handleUnauthorizedResponse(response)
 
@@ -67,13 +92,14 @@ export async function getUserList(): Promise<UserListResponse> {
     }
 
     const rows = readEnvelopeItems(payload) as Record<string, unknown>[]
-    const data = rows.map(normalizeUser)
+    const normalizedRows = rows.map(normalizeUser)
+    const total = readEnvelopeTotal(payload, normalizedRows.length)
 
     return {
       code: code ?? 200,
       message: readSuccessMessage(payload),
-      data,
-      total: readEnvelopeTotal(payload, data.length),
+      data: normalizedRows,
+      total,
       source: target.source,
     }
   }

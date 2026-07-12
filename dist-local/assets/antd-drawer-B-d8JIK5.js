@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-QTnfLwEv.js";import{nn as t}from"./ant-design-vendor-D5p2LsVm.js";var n=e(t());function r(e,t,r){return(0,n.useMemo)(()=>({trap:t??!0,focusTriggerAfterClose:r??!0,...e}),[e,t,r])}export{r as t};

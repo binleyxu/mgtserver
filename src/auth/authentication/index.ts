@@ -17,9 +17,16 @@ export {
 } from './services/authService'
 
 export {
+  buildAdminSessionRefreshSnapshot,
+  clearAdminSessionActivityEvents,
   getAdminToken,
   getAdminIdFromToken,
   getAdminRoleFromToken,
+  getAdminSessionActivityEvents,
+  recordAdminSessionActivityEvent,
+  getAdminDisplayName,
+  getAdminDisplayAvatarUrl,
+  setAdminDisplayProfile,
   buildAuthHeaders,
   handleUnauthorizedResponse,
 } from './services/sessionService'

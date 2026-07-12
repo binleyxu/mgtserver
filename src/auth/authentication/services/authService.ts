@@ -1,7 +1,23 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../../../config'
-import type { AdminLoginRequest, AdminLoginResponse, AdminSessionMeta } from '../types/auth.types'
+import type { AdminLoginRequest, AdminLoginResponse, AdminSessionMeta, AdminSessionRefreshRequest } from '../types/auth.types'
 import { extractApiMessage, isBusinessSuccess, readEnvelopeCode, readHttpErrorDetails } from '../../../utils/apiSemantics'
 import { clearAdminToken as clearAdminTokenInStorage, setAdminToken as setAdminTokenInStorage } from './sessionService'
+
+const AUTH_REQUEST_TIMEOUT_MS = 10000
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } finally {
+    globalThis.clearTimeout(timeoutId)
+  }
+}
 
 export class ApiHttpError extends Error {
   status: number
@@ -79,14 +95,14 @@ export async function loginAdmin(
   data: AdminLoginRequest
 ): Promise<AdminLoginResponse> {
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+    const response = await fetchWithTimeout(API_ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
       body: JSON.stringify(data),
-    })
+    }, AUTH_REQUEST_TIMEOUT_MS)
 
     if (!response.ok) {
       const payload = await readHttpErrorDetails(response, `HTTP ${response.status}`)
@@ -96,6 +112,10 @@ export async function loginAdmin(
     const payload = await response.json()
     return normalizeLoginResponse(payload)
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('登录请求超时，请检查网络后重试')
+    }
+
     const message = error instanceof Error ? error.message : 'Network error'
     console.error(`[Auth] Login error: ${message}. API URL: ${API_BASE_URL}`)
     throw error
@@ -103,13 +123,21 @@ export async function loginAdmin(
 }
 
 export async function getHumanChallenge(): Promise<{ id: string; nonce?: string; expires_in?: number }> {
-  const response = await fetch(API_ENDPOINTS.AUTH.CHALLENGE, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  })
+  let response: Response
+  try {
+    response = await fetchWithTimeout(API_ENDPOINTS.AUTH.CHALLENGE, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    }, AUTH_REQUEST_TIMEOUT_MS)
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('获取人机验证超时，请重试')
+    }
+    throw error
+  }
 
   if (!response.ok) {
     const payload = await readHttpErrorDetails(response, `HTTP ${response.status}`)
@@ -139,22 +167,23 @@ export async function getHumanChallenge(): Promise<{ id: string; nonce?: string;
   throw new Error('获取人机挑战失败：响应格式错误')
 }
 
-export async function refreshAdminSession(): Promise<AdminLoginResponse> {
-  const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
+export async function refreshAdminSession(payload?: AdminSessionRefreshRequest): Promise<AdminLoginResponse> {
+  const response = await fetchWithTimeout(API_ENDPOINTS.AUTH.REFRESH, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-  })
+    body: payload ? JSON.stringify(payload) : undefined,
+  }, AUTH_REQUEST_TIMEOUT_MS)
 
   if (!response.ok) {
     const payload = await readHttpErrorDetails(response, `HTTP ${response.status}`)
     throw new ApiHttpError(payload.message, response.status, payload.retryAfterSeconds, payload.lockType)
   }
 
-  const payload = await response.json()
-  return normalizeLoginResponse(payload)
+  const responsePayload = await response.json()
+  return normalizeLoginResponse(responsePayload)
 }
 
 export function setAdminToken(token: string, sessionMeta?: AdminSessionMeta) {

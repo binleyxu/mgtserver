@@ -28,10 +28,16 @@ export const RolePanelModal: React.FC<RolePanelModalProps> = ({
 }) => {
   return (
     <Modal title="角色管理" open={open} onCancel={onCancel} footer={null} width={860}>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreateRole}>
-          新增角色
-        </Button>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          type="primary"
+          size="small"
+          shape="circle"
+          icon={<PlusOutlined />}
+          onClick={onCreateRole}
+          aria-label="新增角色"
+          title="新增角色"
+        />
       </div>
       <Table
         loading={loading}

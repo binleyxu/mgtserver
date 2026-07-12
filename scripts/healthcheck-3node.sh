@@ -22,7 +22,7 @@ check "mgtserver ssh alias" ssh -o BatchMode=yes mgtserver hostname
 check "apiserver ssh alias" ssh -o BatchMode=yes apiserver hostname
 check "dbserver ssh alias" ssh -o BatchMode=yes dbserver hostname
 
-check "frontend service active" systemctl is-active --quiet mgt-frontend.service
+check "frontend service active" ssh -o BatchMode=yes mgtserver "systemctl is-active --quiet mgtserver.service"
 check "frontend url 200" bash -lc "curl -sS -m 8 -I http://192.168.0.99:5173 | grep -q '200 OK'"
 
 check "apiserver user service active" ssh -o BatchMode=yes apiserver "export XDG_RUNTIME_DIR=/run/user/\$(id -u); systemctl --user is-active --quiet apiserver.service"

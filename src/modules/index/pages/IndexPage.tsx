@@ -2,10 +2,18 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Row, Col } from 'antd'
 import { UserOutlined, BarChartOutlined, FileTextOutlined, TeamOutlined } from '@ant-design/icons'
-import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
+import {
+  canAccessAdminAndSettings,
+  clearAdminToken,
+  getAdminDisplayAvatarUrl,
+  getAdminDisplayName,
+  getAdminIdFromToken,
+  getAdminRoleFromToken,
+  setAdminDisplayProfile,
+} from '@/auth'
 import '../styles/IndexPage.css'
-import countryGlobeIcon from '../../../assets/country-globe.svg?url'
-import { getAdminDetail } from '../../admin'
+import countryGlobeIcon from '@/assets/country-globe.svg?url'
+import { getAdminDetail, getAdminList } from '../../admin'
 import { AdminScaffold } from '@/layouts/AdminScaffold'
 import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
@@ -14,7 +22,8 @@ export const IndexPage: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const selectedKey = 'home'
   const [openKeys, setOpenKeys] = useState<string[]>(['setting', 'region-management'])
-  const [currentAdminName, setCurrentAdminName] = useState<string>('管理员')
+  const [currentAdminName, setCurrentAdminName] = useState<string>(getAdminDisplayName() || '未加载姓名')
+  const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = useState<string>(getAdminDisplayAvatarUrl())
 
   const role = getAdminRoleFromToken()
   const canAccessPrivilegedModules = canAccessAdminAndSettings(role)
@@ -22,16 +31,45 @@ export const IndexPage: React.FC = () => {
   const loadCurrentAdminName = async () => {
     const adminId = getAdminIdFromToken()
     if (!adminId) {
-      setCurrentAdminName('管理员')
+      setCurrentAdminName('未加载姓名')
+      setCurrentAdminAvatarUrl('')
       return
     }
 
     try {
-      const response = await getAdminDetail(adminId)
-      const username = response.data?.username || ''
-      setCurrentAdminName(username || '管理员')
-    } catch {
-      setCurrentAdminName('管理员')
+      const detail = await getAdminDetail(adminId)
+      const username = detail.data?.username || ''
+      setCurrentAdminName(username || '未加载姓名')
+      setCurrentAdminAvatarUrl(detail.data?.avatarSmallUrl || '')
+      setAdminDisplayProfile(username || undefined, detail.data?.avatarSmallUrl || undefined)
+
+      if (!detail.data?.avatarSmallUrl) {
+        const response = await getAdminList(1, 1000)
+        const adminKey = String(adminId)
+        const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
+        if (matched?.avatarSmallUrl) {
+          setCurrentAdminAvatarUrl(matched.avatarSmallUrl)
+          setAdminDisplayProfile(username || undefined, matched.avatarSmallUrl)
+        }
+      }
+      return
+    } catch (error) {
+      console.warn('[IndexPage] 加载管理员详情失败，回退到列表查找。', error)
+    }
+
+    try {
+      const response = await getAdminList(1, 1000)
+      const adminKey = String(adminId)
+      const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
+      if (!matched) {
+        return
+      }
+      setCurrentAdminName(matched?.username || '未加载姓名')
+      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
+      setAdminDisplayProfile(matched?.username || undefined, matched?.avatarSmallUrl || undefined)
+    } catch (error) {
+      console.warn('[IndexPage] 加载管理员列表也失败。', error)
+      // Keep cached display profile when network request fails.
     }
   }
 
@@ -101,6 +139,7 @@ export const IndexPage: React.FC = () => {
   return (
     <AdminScaffold
       currentAdminName={currentAdminName}
+      currentAdminAvatarUrl={currentAdminAvatarUrl}
       collapsed={collapsed}
       onCollapse={setCollapsed}
       selectedKeys={[selectedKey]}
@@ -111,17 +150,6 @@ export const IndexPage: React.FC = () => {
       showFooter
     >
       <div className="index-container">
-        <div className="welcome-section">
-          <h2>欢迎使用管理后台系统</h2>
-          <p>这是一个功能完整的后台管理系统</p>
-        </div>
-
-        <div className="permission-legend-section">
-          <h3>权限图例</h3>
-          <p>admin 资源：supervisor（super_admin）可编辑，不可删除。</p>
-          <p>user 资源：viewer 只读；admin / super_admin 可编辑与删除。</p>
-        </div>
-
         <Row gutter={[20, 20]} className="menu-grid">
           {dashboardCards.map((card) => (
             <Col xs={24} sm={12} md={12} lg={6} key={card.key}>

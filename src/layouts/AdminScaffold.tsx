@@ -1,10 +1,10 @@
-import type { PropsWithChildren, ReactNode } from 'react'
+import { useEffect, useMemo, useState, type PropsWithChildren, type ReactNode } from 'react'
 import { Layout, Menu, Breadcrumb, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation } from 'react-router-dom'
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons'
+import { LogoutOutlined } from '@ant-design/icons'
 
-import logoUrl from '@/assets/logo.jpg?url'
+import fallbackAvatarUrl from '@/assets/avatar-fallback.svg?url'
 
 import './AdminScaffold.css'
 
@@ -89,7 +89,9 @@ const buildBreadcrumbItems = (pathname: string) => {
 
 type AdminScaffoldProps = PropsWithChildren<{
   title?: string
+  siderTitle?: ReactNode
   currentAdminName: string
+  currentAdminAvatarUrl?: string | null
   collapsed: boolean
   onCollapse: (collapsed: boolean) => void
   selectedKeys: string[]
@@ -104,7 +106,9 @@ type AdminScaffoldProps = PropsWithChildren<{
 
 export const AdminScaffold = ({
   title = '管理端',
+  siderTitle,
   currentAdminName,
+  currentAdminAvatarUrl,
   collapsed,
   onCollapse: _onCollapse,
   selectedKeys,
@@ -118,8 +122,27 @@ export const AdminScaffold = ({
   children,
 }: AdminScaffoldProps) => {
   const location = useLocation()
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const normalizedItems = (menuItems ?? []) as MenuNode[]
   const selectedKeySet = new Set(selectedKeys)
+  const normalizedAdminName = currentAdminName?.trim() || '未加载姓名'
+  const effectiveAvatarUrl = currentAdminAvatarUrl?.trim() || ''
+
+  useEffect(() => {
+    setAvatarLoadFailed(false)
+  }, [effectiveAvatarUrl])
+
+  const shouldUseFallbackAvatarImage = normalizedAdminName === '未加载姓名'
+  const shouldUseAvatarImage = useMemo(() => {
+    const avatarUrl = effectiveAvatarUrl
+    if (!avatarUrl) return false
+    if (avatarLoadFailed) return false
+
+    // Back-end default placeholder is a data-uri SVG avatar silhouette; prefer initial fallback instead.
+    if (avatarUrl.startsWith('data:image/svg+xml')) return false
+
+    return true
+  }, [avatarLoadFailed, effectiveAvatarUrl])
 
   const railItems: MenuProps['items'] = normalizedItems
     .filter((item) => item?.key && item?.icon)
@@ -143,7 +166,7 @@ export const AdminScaffold = ({
     <Layout className="admin-scaffold-layout">
       <Header className="admin-scaffold-header">
         <div className="admin-scaffold-header-left">
-          <img className="admin-scaffold-brand-image" src={logoUrl} alt="管理端 logo" />
+          <img className="admin-scaffold-brand-image" src="/logo.png" alt="管理端 logo" />
         </div>
 
         <div className="admin-scaffold-header-center">
@@ -173,9 +196,30 @@ export const AdminScaffold = ({
               menu={{
                 items: [
                   {
-                    key: 'admin-name',
-                    icon: <UserOutlined />,
-                    label: currentAdminName || '管理员',
+                    key: 'admin-profile',
+                    label: (
+                      <span className="admin-scaffold-dropdown-profile">
+                        {shouldUseAvatarImage ? (
+                          <img
+                            src={effectiveAvatarUrl || undefined}
+                            alt={normalizedAdminName}
+                            className="admin-scaffold-dropdown-avatar-image"
+                            onError={() => setAvatarLoadFailed(true)}
+                          />
+                        ) : shouldUseFallbackAvatarImage ? (
+                          <img
+                            src={fallbackAvatarUrl}
+                            alt="未加载姓名"
+                            className="admin-scaffold-dropdown-avatar-image admin-scaffold-user-avatar-fallback-image"
+                          />
+                        ) : (
+                          <span className="admin-scaffold-dropdown-avatar-fallback">
+                            {normalizedAdminName.slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
+                        <span className="admin-scaffold-dropdown-profile-name">{normalizedAdminName}</span>
+                      </span>
+                    ),
                     disabled: true,
                   },
                   { type: 'divider' },
@@ -189,7 +233,24 @@ export const AdminScaffold = ({
               }}
             >
               <button type="button" className="admin-scaffold-user-trigger" aria-label="管理员菜单">
-                <UserOutlined />
+                {shouldUseAvatarImage ? (
+                  <img
+                    src={effectiveAvatarUrl || undefined}
+                    alt={normalizedAdminName}
+                    className="admin-scaffold-user-avatar-image"
+                    onError={() => setAvatarLoadFailed(true)}
+                  />
+                ) : shouldUseFallbackAvatarImage ? (
+                  <img
+                    src={fallbackAvatarUrl}
+                    alt="未加载姓名"
+                    className="admin-scaffold-user-avatar-image admin-scaffold-user-avatar-fallback-image"
+                  />
+                ) : (
+                  <span className="admin-scaffold-user-avatar-fallback">
+                    {normalizedAdminName.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
               </button>
             </Dropdown>
           </div>
@@ -197,7 +258,7 @@ export const AdminScaffold = ({
 
         <aside className={`admin-scaffold-sider${collapsed ? ' is-collapsed' : ''}`}>
           <div className="admin-scaffold-sider-title">
-            <span className="admin-scaffold-sider-title-text">{activeRoot?.label || title}</span>
+            <span className="admin-scaffold-sider-title-text">{siderTitle || activeRoot?.label || title}</span>
           </div>
           <Menu
             mode="inline"

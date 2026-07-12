@@ -11,7 +11,7 @@ test.describe('Admin Auth Guard', () => {
       await fulfillJson(route, { message: 'unauthorized' }, 401)
     })
 
-    await page.route('**/api/admin/roles/list', async (route) => {
+    await page.route('**/api/admin/role/list', async (route) => {
       await fulfillJson(route, { message: 'unauthorized' }, 401)
     })
 

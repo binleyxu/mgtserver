@@ -6,15 +6,8 @@ export const AVATAR_MIN_IMAGE_SIDE = 128
 export const AVATAR_CANVAS_SIZE = 280
 export const AVATAR_CROP_BOX_SIZE = 200
 
-function buildDefaultAvatarDataUri(fill: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="16" fill="#eef2f5"/><circle cx="64" cy="48" r="24" fill="${fill}"/><path d="M24 106c6-20 24-32 40-32s34 12 40 32" fill="${fill}"/></svg>`
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-}
-
-export const DEFAULT_ADMIN_AVATAR_DATA_URI = buildDefaultAvatarDataUri('#aab4bc')
-
 export function resolveAvatarUrl(url?: string | null): string {
-  return typeof url === 'string' && url.trim() ? url : DEFAULT_ADMIN_AVATAR_DATA_URI
+  return typeof url === 'string' ? url.trim() : ''
 }
 
 export function validateAvatarFile(file: File): string | null {
@@ -132,7 +125,7 @@ export function drawPreviewDataUrl(image: HTMLImageElement, crop: AvatarCropRect
 
   const context = canvas.getContext('2d')
   if (!context) {
-    return DEFAULT_ADMIN_AVATAR_DATA_URI
+    return ''
   }
 
   context.imageSmoothingEnabled = true

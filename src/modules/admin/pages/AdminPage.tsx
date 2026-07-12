@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import type {
   Admin,
   AdminListResponse,
+  CreateAdminRequest,
   UpdateAdminRequest,
   MenuItemInfo,
 } from '../types/admin.types'
@@ -11,24 +12,94 @@ import {
   deleteAdmin,
   createAdmin,
   updateAdmin,
-  getAdminDetail,
   getMenuList,
 } from '../services/adminService'
 import { createRole, deleteRole, getRoleList, getRoleMenu, updateRole, updateRoleMenu } from '../role'
-import { Table, Button, Space, Card, Popconfirm, message, Modal, Form, Input, Select, Tooltip } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Table, Button, Space, Card, Popconfirm, message, Modal, Form, Input, Select, Tooltip, Avatar } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { AvatarUploadModal, resolveAvatarUrl } from '../avatar'
 import '../styles/AdminPage.css'
 import '../avatar/styles/avatar.css'
 import { formatDateDMY } from '../../../utils/dateTimeFormat'
-import roleManagementActionIcon from '../../../assets/role-management-action.svg?url'
-import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
+import roleManagementActionIcon from '@/assets/role-management-action.svg?url'
+import {
+  canAccessAdminAndSettings,
+  clearAdminToken,
+  getAdminDisplayAvatarUrl,
+  getAdminDisplayName,
+  getAdminIdFromToken,
+  getAdminRoleFromToken,
+  setAdminDisplayProfile,
+} from '@/auth'
 import { RoleFormModal, RoleMenuModal, RolePanelModal } from '../role'
 import { AdminScaffold } from '@/layouts/AdminScaffold'
 import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
 const { Option } = Select
+
+function deriveRolesFromAdmins(adminRows: Admin[]): Role[] {
+  const roleMap = new Map<string, Role>()
+  let nextSyntheticId = -1
+
+  adminRows.forEach((admin) => {
+    const roleId = Number(admin.roleId)
+    const roleName = typeof admin.role === 'string' ? admin.role.trim() : ''
+    if (!roleName) {
+      return
+    }
+
+    const key = roleName.toLowerCase()
+    const normalizedRoleId = Number.isFinite(roleId) && roleId > 0 ? roleId : nextSyntheticId--
+
+    if (!roleMap.has(key)) {
+      roleMap.set(key, {
+        id: normalizedRoleId,
+        role_name: roleName,
+        is_active: true,
+      })
+    }
+  })
+
+  return Array.from(roleMap.values())
+}
+
+type AdminAvatarCellProps = {
+  avatarUrl?: string | null
+  alt: string
+}
+
+const AdminAvatarCell: React.FC<AdminAvatarCellProps> = ({ avatarUrl, alt }) => {
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
+  const normalizedUrl = resolveAvatarUrl(avatarUrl)
+  const shouldShowDefault = !normalizedUrl || avatarLoadFailed
+
+  if (shouldShowDefault) {
+    return (
+      <Avatar
+        shape="square"
+        size={32}
+        icon={<UserOutlined />}
+        style={{
+          backgroundColor: '#eef2f5',
+          color: '#aab4bc',
+          border: '1px solid #d8e2e8',
+        }}
+      />
+    )
+  }
+
+  return (
+    <img
+      src={normalizedUrl}
+      alt={alt}
+      width={32}
+      height={32}
+      className="avatar-table-image"
+      onError={() => setAvatarLoadFailed(true)}
+    />
+  )
+}
 
 /**
  * Admin 管理页面
@@ -37,7 +108,14 @@ export const AdminPage: React.FC = () => {
   const navigate = useNavigate()
   const [admins, setAdmins] = useState<Admin[]>([])
   const [roles, setRoles] = useState<Role[]>([])
-  const visibleRoles = roles.filter((role) => role.role_name !== 'super_admin')
+  const visibleRoles = (() => {
+    const apiRoles = roles.filter((role) => role.role_name !== 'super_admin')
+    if (apiRoles.length > 0) {
+      return apiRoles
+    }
+
+    return deriveRolesFromAdmins(admins).filter((role) => role.role_name !== 'super_admin')
+  })()
   const [loading, setLoading] = useState(false)
   const [roleLoading, setRoleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,7 +142,8 @@ export const AdminPage: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const selectedKey = 'admin'
   const [openKeys, setOpenKeys] = useState<string[]>(['setting', 'region-management'])
-  const [currentAdminName, setCurrentAdminName] = useState<string>('管理员')
+  const [currentAdminName, setCurrentAdminName] = useState<string>(getAdminDisplayName() || '未加载姓名')
+  const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = useState<string>(getAdminDisplayAvatarUrl())
 
   const handleLogout = () => {
     clearAdminToken()
@@ -109,11 +188,27 @@ export const AdminPage: React.FC = () => {
     setRoleLoading(true)
     try {
       const response = await getRoleList()
-      setRoles(response.items || [])
+      const apiRoles = response.items || []
+      if (apiRoles.length > 0) {
+        setRoles(apiRoles)
+        return
+      }
+
+      try {
+        const adminResponse = await getAdminList(1, 1000)
+        setRoles(deriveRolesFromAdmins(adminResponse.data || []))
+      } catch {
+        setRoles([])
+      }
     } catch (err) {
       if (isNotFoundError(err)) {
-        // Role endpoints may be unavailable in some environments; fall back silently.
-        setRoles([])
+        // Role endpoints may be unavailable in some environments; derive role options from admin rows.
+        try {
+          const adminResponse = await getAdminList(1, 1000)
+          setRoles(deriveRolesFromAdmins(adminResponse.data || []))
+        } catch {
+          setRoles([])
+        }
         return
       }
       const messageText = err instanceof Error ? err.message : '加载角色失败'
@@ -126,16 +221,24 @@ export const AdminPage: React.FC = () => {
   const loadCurrentAdminName = async () => {
     const adminId = getAdminIdFromToken()
     if (!adminId) {
-      setCurrentAdminName('管理员')
+      setCurrentAdminName('未加载姓名')
+      setCurrentAdminAvatarUrl('')
       return
     }
 
     try {
-      const response = await getAdminDetail(adminId)
-      const username = response.data?.username || ''
-      setCurrentAdminName(username || '管理员')
+      const response = await getAdminList(1, 1000)
+      const adminKey = String(adminId)
+      const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
+      if (!matched) {
+        return
+      }
+      const username = matched?.username || ''
+      setCurrentAdminName(username || '未加载姓名')
+      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
+      setAdminDisplayProfile(username || undefined, matched?.avatarSmallUrl || undefined)
     } catch {
-      setCurrentAdminName('管理员')
+      // Keep cached display profile when network request fails.
     }
   }
 
@@ -216,6 +319,8 @@ export const AdminPage: React.FC = () => {
     try {
       const values = await form.validateFields()
       setConfirmLoading(true)
+      const parsedRoleId = Number(values.role_id)
+      const selectedRole = visibleRoles.find((role) => role.id === parsedRoleId)
       if (editingAdmin) {
         if (!editingAdmin.id) {
           message.error('无法更新：未提供 numeric ID')
@@ -224,8 +329,13 @@ export const AdminPage: React.FC = () => {
         const updateData: UpdateAdminRequest = {
           name: values.name,
           email: values.email,
-          role_id: Number(values.role_id),
           is_active: values.status === 'active',
+        }
+        if (Number.isFinite(parsedRoleId) && parsedRoleId > 0) {
+          updateData.role_id = parsedRoleId
+        }
+        if (selectedRole?.role_name) {
+          updateData.role = selectedRole.role_name
         }
         if (values.password) {
           updateData.password = values.password
@@ -233,13 +343,20 @@ export const AdminPage: React.FC = () => {
         await updateAdmin(editingAdmin.id, updateData)
         message.success('更新成功')
       } else {
-        await createAdmin({
+        const createPayload: CreateAdminRequest = {
           username: values.username,
           name: values.name,
           email: values.email,
-          role_id: Number(values.role_id),
           password: values.password,
-        })
+        }
+        if (Number.isFinite(parsedRoleId) && parsedRoleId > 0) {
+          createPayload.role_id = parsedRoleId
+        }
+        if (selectedRole?.role_name) {
+          createPayload.role = selectedRole.role_name
+        }
+
+        await createAdmin(createPayload)
         message.success('创建成功')
       }
       setIsModalVisible(false)
@@ -381,13 +498,7 @@ export const AdminPage: React.FC = () => {
       key: 'avatarSmallUrl',
       width: 90,
       render: (avatarSmallUrl: string | null | undefined, record: Admin) => (
-        <img
-          src={resolveAvatarUrl(avatarSmallUrl || record.avatarLargeUrl)}
-          alt={`${record.username} 头像`}
-          width={32}
-          height={32}
-          className="avatar-table-image"
-        />
+        <AdminAvatarCell avatarUrl={avatarSmallUrl || record.avatarLargeUrl} alt={`${record.username} 头像`} />
       ),
     },
     {
@@ -469,7 +580,9 @@ export const AdminPage: React.FC = () => {
 
   return (
     <AdminScaffold
+      siderTitle="管理员"
       currentAdminName={currentAdminName}
+      currentAdminAvatarUrl={currentAdminAvatarUrl}
       collapsed={collapsed}
       onCollapse={setCollapsed}
       selectedKeys={[selectedKey]}
@@ -612,17 +725,11 @@ export const AdminPage: React.FC = () => {
                       <Space direction="vertical" size={8} style={{ width: '100%' }}>
                         {editingAdmin ? (
                           <Space size={12}>
-                            <img
-                              src={resolveAvatarUrl(editingAdmin.avatarSmallUrl || editingAdmin.avatarLargeUrl)}
-                              alt="当前头像"
-                              width={32}
-                              height={32}
-                              className="avatar-table-image"
-                            />
+                            <AdminAvatarCell avatarUrl={editingAdmin.avatarSmallUrl || editingAdmin.avatarLargeUrl} alt="当前头像" />
                             <Button onClick={openAvatarModal}>编辑头像</Button>
                           </Space>
                         ) : (
-                          <span style={{ color: '#6e8090', fontSize: 12 }}>创建管理员后可编辑头像，默认显示灰色头像</span>
+                          <span style={{ color: '#6e8090', fontSize: 12 }}>创建管理员后可编辑头像</span>
                         )}
                       </Space>
                     </Form.Item>

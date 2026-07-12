@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AVATAR_CANVAS_SIZE,
-  DEFAULT_ADMIN_AVATAR_DATA_URI,
   AVATAR_CROP_BOX_SIZE,
   createAvatarCanvasView,
   computeCropRect,
@@ -11,11 +10,11 @@ import {
 } from './imageTransform'
 
 describe('admin avatar imageTransform', () => {
-  it('resolveAvatarUrl should fallback to default gray avatar', () => {
+  it('resolveAvatarUrl should return empty string when url is missing', () => {
     expect(resolveAvatarUrl('https://example.com/a.jpg')).toBe('https://example.com/a.jpg')
-    expect(resolveAvatarUrl('')).toBe(DEFAULT_ADMIN_AVATAR_DATA_URI)
-    expect(resolveAvatarUrl(null)).toBe(DEFAULT_ADMIN_AVATAR_DATA_URI)
-    expect(resolveAvatarUrl(undefined)).toBe(DEFAULT_ADMIN_AVATAR_DATA_URI)
+    expect(resolveAvatarUrl('')).toBe('')
+    expect(resolveAvatarUrl(null)).toBe('')
+    expect(resolveAvatarUrl(undefined)).toBe('')
   })
 
   it('validateAvatarFile should only allow bmp/jpg/png and size <= 5MB', () => {

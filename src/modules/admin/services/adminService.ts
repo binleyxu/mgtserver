@@ -27,7 +27,6 @@ import type {
   MenuUpdateRequest,
 } from '../types/admin.types';
 import { buildAuthHeaders, handleUnauthorizedResponse } from '@/auth'
-import { DEFAULT_ADMIN_AVATAR_DATA_URI } from '../avatar/utils/imageTransform'
 
 function getAuthHeaders(): Record<string, string> {
   return buildAuthHeaders()
@@ -50,8 +49,8 @@ function mapAdminItem(item: any): Admin {
     email: toText(item.email),
     role: toText(item.role),
     roleId: item.role_id !== undefined && item.role_id !== null ? Number(item.role_id) : undefined,
-    avatarSmallUrl: avatarSmall || DEFAULT_ADMIN_AVATAR_DATA_URI,
-    avatarLargeUrl: avatarLarge || DEFAULT_ADMIN_AVATAR_DATA_URI,
+    avatarSmallUrl: avatarSmall,
+    avatarLargeUrl: avatarLarge,
     avatarVersion: item.avatar_version !== undefined && item.avatar_version !== null ? Number(item.avatar_version) : null,
     avatarUpdatedAt: toText(item.avatar_updated_at) || null,
     status: item.is_active ? 'active' : 'inactive',

@@ -52,20 +52,20 @@ export const API_ENDPOINTS = {
 		UPDATE: (id: string) => withApiBase(`/admin/${id}`),
 		DELETE: (id: string) => withApiBase(`/admin/${id}`),
 		AVATAR_UPLOAD: (id: string) => withApiBase(`/admin/${id}/avatar`),
-		ROLE_LIST: withApiBase('/admin/roles/list'),
-		ROLE_CREATE: withApiBase('/admin/roles'),
-		ROLE_UPDATE: (roleId: number) => withApiBase(`/admin/roles/${roleId}`),
-		ROLE_DELETE: (roleId: number) => withApiBase(`/admin/roles/${roleId}`),
+		ROLE_LIST: withApiBase('/admin/role/list'),
+		ROLE_CREATE: withApiBase('/admin/role'),
+		ROLE_UPDATE: (roleId: number) => withApiBase(`/admin/role/${roleId}`),
+		ROLE_DELETE: (roleId: number) => withApiBase(`/admin/role/${roleId}`),
 	},
 	MENU: {
 		LIST: withApiBase('/menu/list'),
 		CREATE: withApiBase('/menu'),
 		UPDATE: (menuId: number) => withApiBase(`/menu/${menuId}`),
-		ROLE_MENU: (roleId: number) => withApiBase(`/menu/roles/${roleId}`),
+		ROLE_MENU: (roleId: number) => withApiBase(`/menu/role/${roleId}`),
 	},
 	USER: {
-		LIST_ADMIN: withApiBase('/admin/user/list?page=1&pageSize=1000'),
-		LIST_LEGACY: withApiBase('/user/list'),
+		LIST_ADMIN: (page: number, pageSize: number) => withApiBase(`/admin/user/list?page=${page}&pageSize=${pageSize}`),
+		LIST_LEGACY: (page: number, pageSize: number) => withApiBase(`/user/list?page=${page}&page_size=${pageSize}`),
 	},
 	REGION: {
 		COUNTRY_LIST: withApiBase('/region/country'),
@@ -73,5 +73,8 @@ export const API_ENDPOINTS = {
 		COUNTRY_SYNC_CANCEL_LATEST: withApiBase('/region/country/sync/cancel-latest'),
 		COUNTRY_SYNC_RUNS: withApiBase('/region/country/sync-runs'),
 		COUNTRY_DISPLAY_NAME_UPDATE: (countryId: number) => withApiBase(`/region/country/${countryId}/display-name`),
+	},
+	CLIENT: {
+		DIAGNOSTIC_LOG: withApiBase('/client/log'),
 	},
 } as const

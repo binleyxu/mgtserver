@@ -1,29 +1,34 @@
 import { useState } from 'react'
-import { getAdminByUsername, getAdminDetail } from '../../admin'
-import { clearAdminToken, getAdminIdFromToken, loginAdmin, setAdminToken } from '@/auth'
+import { getAdminDetail } from '../../admin'
+import { clearAdminToken, getAdminIdFromToken, loginAdmin, setAdminDisplayProfile, setAdminToken } from '@/auth'
 import type { AdminLoginRequest, AdminLoginResponse } from '@/auth'
 
 type AdminStatus = 'active' | 'inactive' | null
+const ADMIN_STATUS_CHECK_TIMEOUT_MS = 5000
 
-async function resolveAdminStatus(username: string, token: string): Promise<AdminStatus> {
+async function resolveAdminStatus(token: string): Promise<AdminStatus> {
   const adminId = getAdminIdFromToken(token)
 
-  if (adminId) {
-    try {
-      const detail = await getAdminDetail(adminId)
-      return detail.data?.status ?? null
-    } catch (err) {
-      console.warn('[Login] getAdminDetail failed, fallback to username lookup:', err)
-    }
+  if (!adminId) {
+    return null
   }
 
   try {
-    const admin = await getAdminByUsername(username)
-    return admin?.status ?? null
+    const detail = await getAdminDetail(adminId)
+    return detail.data?.status ?? null
   } catch (err) {
-    console.warn('[Login] getAdminByUsername failed:', err)
+    console.warn('[Login] getAdminDetail failed, skip admin status check:', err)
     return null
   }
+}
+
+async function resolveAdminStatusWithTimeout(token: string): Promise<AdminStatus> {
+  return await Promise.race<AdminStatus>([
+    resolveAdminStatus(token),
+    new Promise<AdminStatus>((resolve) => {
+      globalThis.setTimeout(() => resolve(null), ADMIN_STATUS_CHECK_TIMEOUT_MS)
+    }),
+  ])
 }
 
 export function useLogin() {
@@ -47,8 +52,9 @@ export function useLogin() {
           warning_before_seconds: response.warning_before_seconds,
           server_time: response.server_time,
         })
+        setAdminDisplayProfile(data.username)
 
-        const adminStatus = await resolveAdminStatus(data.username, response.access_token)
+        const adminStatus = await resolveAdminStatusWithTimeout(response.access_token)
 
         if (adminStatus === 'inactive') {
           clearAdminToken()

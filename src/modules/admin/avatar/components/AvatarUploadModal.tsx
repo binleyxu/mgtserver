@@ -5,7 +5,6 @@ import { uploadAdminAvatar } from '../services/avatarService'
 import { useAvatarCrop } from '../hooks/useAvatarCrop'
 import AvatarCropCanvas from './AvatarCropCanvas'
 import AvatarPreview from './AvatarPreview'
-import { DEFAULT_ADMIN_AVATAR_DATA_URI } from '../utils/imageTransform'
 
 type AvatarUploadModalProps = {
   open: boolean
@@ -185,7 +184,7 @@ export function AvatarUploadModal({
           <AvatarPreview
             smallDataUrl={preview.smallDataUrl}
             largeDataUrl={preview.largeDataUrl}
-            fallbackUrl={currentAvatarSmallUrl || DEFAULT_ADMIN_AVATAR_DATA_URI}
+            fallbackUrl={currentAvatarSmallUrl || ''}
           />
           <div style={{ marginTop: 12, fontSize: 12, color: '#6d7f8d', lineHeight: 1.5 }}>
             拖动方框可移动选区，拖右下角手柄可放大/缩小选区。<br />

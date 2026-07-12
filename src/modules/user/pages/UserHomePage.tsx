@@ -1,13 +1,21 @@
 import React from 'react'
-import { Alert, Table, Tag } from 'antd'
+import { Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useNavigate } from 'react-router-dom'
 
 import { useUserList } from '../hooks/useUserList'
 import type { UserProfile } from '../types/user.types'
 import '../styles/UserHomePage.css'
-import { canAccessAdminAndSettings, clearAdminToken, getAdminIdFromToken, getAdminRoleFromToken } from '@/auth'
-import { getAdminDetail } from '@/modules/admin'
+import {
+  canAccessAdminAndSettings,
+  clearAdminToken,
+  getAdminDisplayAvatarUrl,
+  getAdminDisplayName,
+  getAdminIdFromToken,
+  getAdminRoleFromToken,
+  setAdminDisplayProfile,
+} from '@/auth'
+import { getAdminList } from '@/modules/admin'
 import { AdminScaffold } from '@/layouts/AdminScaffold'
 import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
@@ -31,10 +39,11 @@ const columns: ColumnsType<UserProfile> = [
 
 export const UserHomePage: React.FC = () => {
   const navigate = useNavigate()
-  const { userList, source, loading, error } = useUserList()
+  const { userList, loading, error, page, pageSize, total, setPage, setPageSize } = useUserList()
   const [collapsed, setCollapsed] = React.useState(false)
   const [openKeys, setOpenKeys] = React.useState<string[]>(['setting', 'region-management'])
-  const [currentAdminName, setCurrentAdminName] = React.useState<string>('管理员')
+  const [currentAdminName, setCurrentAdminName] = React.useState<string>(getAdminDisplayName() || '未加载姓名')
+  const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = React.useState<string>(getAdminDisplayAvatarUrl())
 
   const role = getAdminRoleFromToken()
   const canAccessPrivilegedModules = canAccessAdminAndSettings(role)
@@ -49,16 +58,24 @@ export const UserHomePage: React.FC = () => {
     const loadCurrentAdminName = async () => {
       const adminId = getAdminIdFromToken()
       if (!adminId) {
-        setCurrentAdminName('管理员')
+        setCurrentAdminName('未加载姓名')
+        setCurrentAdminAvatarUrl('')
         return
       }
 
       try {
-        const response = await getAdminDetail(adminId)
-        const username = response.data?.username || ''
-        setCurrentAdminName(username || '管理员')
+        const response = await getAdminList(1, 1000)
+        const adminKey = String(adminId)
+        const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
+        if (!matched) {
+          return
+        }
+        const username = matched?.username || ''
+        setCurrentAdminName(username || '未加载姓名')
+        setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
+        setAdminDisplayProfile(username || undefined, matched?.avatarSmallUrl || undefined)
       } catch {
-        setCurrentAdminName('管理员')
+        // Keep cached display profile when network request fails.
       }
     }
 
@@ -73,6 +90,7 @@ export const UserHomePage: React.FC = () => {
   return (
     <AdminScaffold
       currentAdminName={currentAdminName}
+      currentAdminAvatarUrl={currentAdminAvatarUrl}
       collapsed={collapsed}
       onCollapse={setCollapsed}
       selectedKeys={['user']}
@@ -82,29 +100,25 @@ export const UserHomePage: React.FC = () => {
       onLogout={handleLogout}
     >
       <div className="user-page">
-        <h2>用户模块（商城 C 端骨架）</h2>
-        <p>主键为自增整数 ID，分布式标识为 UUID（用于跨项目外链）。</p>
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="权限说明"
-          description="user 资源：viewer 只读；admin / super_admin 可编辑与删除。supervisor（super_admin）允许编辑和删除用户。"
-        />
-        <Alert
-          type={source === 'legacy' ? 'warning' : 'info'}
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="数据源"
-          description={source === 'legacy' ? '当前使用降级端点 /user/list。' : source === 'admin' ? '当前使用主端点 /admin/user/list。' : '正在检测可用数据源。'}
-        />
         {error ? <div className="user-page-error">{error}</div> : null}
         <Table<UserProfile>
           rowKey="id"
           loading={loading}
           columns={columns}
           dataSource={userList}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            onChange: (nextPage, nextPageSize) => {
+              setPage(nextPage)
+              if (nextPageSize && nextPageSize !== pageSize) {
+                setPageSize(nextPageSize)
+              }
+            },
+          }}
           scroll={{ x: 980 }}
         />
       </div>
