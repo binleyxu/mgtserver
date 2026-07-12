@@ -19,10 +19,12 @@ import { Table, Button, Space, Card, Popconfirm, message, Modal, Form, Input, Se
 import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { AvatarUploadModal, resolveAvatarUrl } from '../avatar'
+import { ChangePasswordModal } from '../components/ChangePasswordModal'
 import '../styles/AdminPage.css'
 import '../avatar/styles/avatar.css'
 import { formatDateDMY } from '../../../utils/dateTimeFormat'
 import roleManagementActionIcon from '@/assets/role-management-action.svg?url'
+import passwordSecurityResetIcon from '@/assets/password-security-reset-icon.svg?url'
 import {
   canAccessAdminAndSettings,
   clearAdminToken,
@@ -120,12 +122,15 @@ export const AdminPage: React.FC = () => {
   const [roleLoading, setRoleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [passwordConfirmLoading, setPasswordConfirmLoading] = useState(false)
+  const [passwordTargetAdmin, setPasswordTargetAdmin] = useState<Admin | null>(null)
   const [form] = Form.useForm()
 
   const [rolePanelVisible, setRolePanelVisible] = useState(false)
@@ -273,9 +278,13 @@ export const AdminPage: React.FC = () => {
       email: admin.email,
       role_id: admin.roleId,
       status: admin.status,
-      password: undefined,
     })
     setIsModalVisible(true)
+  }
+
+  const openChangePasswordModal = (admin: Admin) => {
+    setPasswordTargetAdmin(admin)
+    setPasswordModalOpen(true)
   }
 
   const openAvatarModal = () => {
@@ -336,9 +345,6 @@ export const AdminPage: React.FC = () => {
         }
         if (selectedRole?.role_name) {
           updateData.role = selectedRole.role_name
-        }
-        if (values.password) {
-          updateData.password = values.password
         }
         await updateAdmin(editingAdmin.id, updateData)
         message.success('更新成功')
@@ -475,6 +481,29 @@ export const AdminPage: React.FC = () => {
     setAvatarModalOpen(false)
   }
 
+  const handlePasswordModalCancel = () => {
+    setPasswordModalOpen(false)
+    setPasswordTargetAdmin(null)
+  }
+
+  const handlePasswordSubmit = async (nextPassword: string) => {
+    if (!passwordTargetAdmin?.id) {
+      message.error('无法更新密码：未提供 numeric ID')
+      return
+    }
+
+    try {
+      setPasswordConfirmLoading(true)
+      await updateAdmin(passwordTargetAdmin.id, { password: nextPassword })
+      message.success('密码更新成功')
+      handlePasswordModalCancel()
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '密码更新失败')
+    } finally {
+      setPasswordConfirmLoading(false)
+    }
+  }
+
   const handleRoleCancel = () => {
     setRoleModalVisible(false)
   }
@@ -483,7 +512,7 @@ export const AdminPage: React.FC = () => {
     loadAdmins()
     loadRoles()
     loadCurrentAdminName()
-  }, [page])
+  }, [page, pageSize])
 
   const columns = [
     {
@@ -549,9 +578,17 @@ export const AdminPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 160,
+      width: 220,
       render: (_: unknown, record: Admin) => (
         <Space size="small">
+          <Tooltip title="更改密码">
+            <Button
+              size="small"
+              icon={<img src={passwordSecurityResetIcon} alt="" width={18} height={18} style={{ display: 'block' }} />}
+              onClick={() => openChangePasswordModal(record)}
+              aria-label="更改密码"
+            />
+          </Tooltip>
           <Button
             type="primary"
             size="small"
@@ -638,8 +675,14 @@ export const AdminPage: React.FC = () => {
                     current: page,
                     pageSize: pageSize,
                     total: total,
-                    onChange: (newPage) => setPage(newPage),
-                    showSizeChanger: false,
+                    onChange: (newPage, newPageSize) => {
+                      setPage(newPage)
+                      if (newPageSize && newPageSize !== pageSize) {
+                        setPageSize(newPageSize)
+                      }
+                    },
+                    showSizeChanger: { showSearch: false },
+                    pageSizeOptions: ['10', '20', '50', '100'],
                   }}
                 />
 
@@ -709,17 +752,15 @@ export const AdminPage: React.FC = () => {
                         <Option value="inactive">禁用</Option>
                       </Select>
                     </Form.Item>
+                    {!editingAdmin && (
                     <Form.Item
                       name="password"
                       label="密码"
-                      rules={
-                        editingAdmin
-                          ? []
-                          : [{ required: true, message: '请输入密码' }]
-                      }
+                      rules={[{ required: true, message: '请输入密码' }]}
                     >
-                      <Input.Password placeholder={editingAdmin ? '留空则不修改密码' : '请输入密码'} />
+                      <Input.Password placeholder="请输入密码" />
                     </Form.Item>
+                    )}
 
                     <Form.Item label="头像设置">
                       <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -742,6 +783,14 @@ export const AdminPage: React.FC = () => {
                   currentAvatarSmallUrl={editingAdmin?.avatarSmallUrl}
                   onClose={() => setAvatarModalOpen(false)}
                   onSaved={handleAvatarSaved}
+                />
+
+                <ChangePasswordModal
+                  open={passwordModalOpen}
+                  confirmLoading={passwordConfirmLoading}
+                  targetAdminName={passwordTargetAdmin?.username || passwordTargetAdmin?.name}
+                  onSubmit={handlePasswordSubmit}
+                  onCancel={handlePasswordModalCancel}
                 />
 
                 <RoleMenuModal

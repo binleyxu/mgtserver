@@ -1,5 +1,8 @@
 ## 后端打通清单：管理员头像
 
+关联复盘手册：
+- [问题复盘手册（开发/联调）](docs/problem-retrospective-playbook.md)
+
 本仓库是前端仓库，不包含后端源码。要让“保存头像”可用，后端必须实现上传接口并落库到 public.admin。
 
 ### 1. 数据库迁移（先做）
@@ -22,7 +25,8 @@ ORDER BY column_name;
 
 ### 2. 后端接口（必须实现）
 - Method: POST
-- Path: /api/admin/{id}/avatar
+- Path: /admin/{id}/avatar（当前后端已验证）
+- 兼容路径：/api/admin/{id}/avatar（建议保持可用）
 - Content-Type: multipart/form-data
 - Form fields:
   - file
@@ -64,3 +68,13 @@ ORDER BY column_name;
 2. 不应再出现 404 提示
 3. 列表头像立即更新
 4. 刷新页面后头像仍存在（说明后端落库成功）
+
+### 6. 隐藏问题（必须检查）
+1. 后端返回 `/static/avatar/...` 后，管理端域名下同路径可能被前端 SPA 回退拦截，返回 `text/html`。
+2. 一旦出现该问题，页面会长期显示默认头像，看起来像“上传成功但不生效”。
+3. 快速排查：
+  - 后端直连检查：`http://192.168.0.206:8080/static/avatar/{admin_id}/avatar_32.jpg` 应返回 200 且 `image/jpeg`。
+  - 管理端域名检查：`http://192.168.0.99:3000/static/avatar/{admin_id}/avatar_32.jpg` 也应返回 200 且 `image/jpeg`。
+4. 若管理端域名返回 HTML：
+  - 需要在管理端网关补齐 `/static/avatar/*` 到后端静态目录的转发规则。
+  - 在代理修复前，不建议前端吞掉问题并静默展示默认图。

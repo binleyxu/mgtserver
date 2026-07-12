@@ -1,0 +1,37 @@
+stateDiagram-v2
+  [*] --> Idle: 打开/login
+
+  Idle: 未勾选人机验证
+  Idle --> HumanLoading: 勾选“我不是机器人”
+
+  HumanLoading: 请求challenge中
+  HumanLoading --> HumanReady: challenge成功
+  HumanLoading --> HumanLocked: 429(lockType=human)
+  HumanLoading --> Idle: challenge失败
+
+  HumanReady: 人机验证通过
+  HumanReady --> Submitting: 点击登录
+  HumanReady --> Idle: 手动取消勾选
+  HumanReady --> HumanExpired: challenge到期
+
+  HumanExpired: 人机验证过期
+  HumanExpired --> HumanLoading: 重新勾选
+
+  Submitting: 提交账号密码+human_token
+  Submitting --> LoginLocked: 429(lockType!=human)
+  Submitting --> Idle: 登录失败(401/业务失败)
+  Submitting --> InactiveBlocked: 登录成功后状态校验=inactive
+  Submitting --> Authenticated: 登录成功且状态可用
+
+  HumanLocked: 人机验证锁定中
+  HumanLocked --> Idle: 锁定到期
+
+  LoginLocked: 登录锁定中
+  LoginLocked --> HumanReady: 锁定到期且挑战仍有效
+  LoginLocked --> Idle: 锁定到期且挑战失效
+
+  InactiveBlocked: 账号禁用已拦截
+  InactiveBlocked --> Idle: 清token并停留登录页
+
+  Authenticated: 跳转/index
+  Authenticated --> [*]

@@ -110,8 +110,8 @@ export const UserHomePage: React.FC = () => {
             current: page,
             pageSize,
             total,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50'],
+            showSizeChanger: { showSearch: false },
+            pageSizeOptions: ['10', '20', '50', '100'],
             onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
               if (nextPageSize && nextPageSize !== pageSize) {

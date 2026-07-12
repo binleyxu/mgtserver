@@ -1,0 +1,45 @@
+sequenceDiagram
+  autonumber
+  actor U as 用户
+  participant P as LoginPage
+  participant A as Auth API
+  participant H as useLogin
+  participant D as Admin Detail API
+  participant S as SessionStorage
+
+  U->>P: 勾选“我不是机器人”
+  P->>A: GET /api/auth/challenge
+  A-->>P: challenge.id, expires_in
+  P-->>U: 显示“已通过人机验证”与倒计时
+
+  U->>P: 输入用户名/密码并点击登录
+  P->>H: login(username,password,human_token)
+  H->>A: POST /api/login
+
+  alt 登录失败(401/业务失败)
+    A-->>H: error message
+    H-->>P: 抛出错误
+    P-->>U: 提示失败并重置人机验证状态
+  else 命中限流(429)
+    A-->>H: retryAfterSeconds, lockType
+    H-->>P: ApiHttpError(429)
+    alt lockType=human
+      P-->>U: 人机验证锁定，禁止继续勾选
+    else lockType!=human
+      P-->>U: 登录锁定，登录按钮禁用直到到期
+    end
+  else 登录成功(返回access_token)
+    A-->>H: access_token + session meta
+    H->>S: 写入admin_token与会话元信息
+    H->>D: GET /api/admin/{id}
+    alt 账号禁用(inactive)
+      D-->>H: status=inactive
+      H->>S: 清理token
+      H-->>P: 抛出“该账号已被禁用”
+      P-->>U: 停留登录页
+    else 账号可用(active/unknown)
+      D-->>H: status=active/null
+      H-->>P: success
+      P-->>U: 提示登录成功并跳转/index
+    end
+  end

@@ -1,5 +1,9 @@
 # PRD 累计补充
 
+## 0. 需求分册索引
+
+- 登录业务需求文档：[docs/login-business-requirements.md](docs/login-business-requirements.md)
+
 ## 1. 产品形态与适用平台
 
 - 前端产品是系统管理员管理后台。

@@ -81,10 +81,14 @@ export const CountryPage: React.FC = () => {
   const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = useState<string>(getAdminDisplayAvatarUrl())
   const [loading, setLoading] = useState(false)
   const [countryList, setCountryList] = useState<Country[]>([])
+  const [countryPage, setCountryPage] = useState(1)
+  const [countryPageSize, setCountryPageSize] = useState(20)
   const [sourceModalOpen, setSourceModalOpen] = useState(false)
   const [syncLogModalOpen, setSyncLogModalOpen] = useState(false)
   const [syncRuns, setSyncRuns] = useState<CountrySyncSummary[]>([])
   const [syncRunsLoading, setSyncRunsLoading] = useState(false)
+  const [syncLogPage, setSyncLogPage] = useState(1)
+  const [syncLogPageSize, setSyncLogPageSize] = useState(8)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingCountry, setEditingCountry] = useState<Country | null>(null)
   const [editName, setEditName] = useState('')
@@ -168,6 +172,7 @@ export const CountryPage: React.FC = () => {
 
   const openSyncLogModal = () => {
     setSyncLogModalOpen(true)
+    setSyncLogPage(1)
     void loadSyncRuns()
   }
 
@@ -374,33 +379,36 @@ export const CountryPage: React.FC = () => {
       onLogout={handleLogout}
     >
       <div className="country-page">
-        <Card className="country-card" title="地区管理 / 国家">
-                <div className="country-toolbar">
-                  <Space size={0} style={{ marginLeft: 'auto' }}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<SyncOutlined />}
-                      onClick={openSyncModal}
-                      loading={syncing}
-                      aria-label="同步公网国家数据"
-                    />
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<FileSearchOutlined />}
-                      onClick={openSyncLogModal}
-                      aria-label="查看同步日志"
-                    />
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<QuestionCircleOutlined />}
-                      onClick={() => setSourceModalOpen(true)}
-                      aria-label="查看国家数据来源说明"
-                    />
-                  </Space>
-                </div>
+        <Card
+          className="country-card"
+          title="地区管理 / 国家"
+          extra={
+            <Space size={0}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SyncOutlined />}
+                onClick={openSyncModal}
+                loading={syncing}
+                aria-label="同步公网国家数据"
+              />
+              <Button
+                type="text"
+                size="small"
+                icon={<FileSearchOutlined />}
+                onClick={openSyncLogModal}
+                aria-label="查看同步日志"
+              />
+              <Button
+                type="text"
+                size="small"
+                icon={<QuestionCircleOutlined />}
+                onClick={() => setSourceModalOpen(true)}
+                aria-label="查看国家数据来源说明"
+              />
+            </Space>
+          }
+        >
 
                 <Table
                   className="country-table"
@@ -420,8 +428,16 @@ export const CountryPage: React.FC = () => {
                   }}
                   scroll={{ x: 740 }}
                   pagination={{
-                    pageSize: 20,
-                    showSizeChanger: false,
+                    current: countryPage,
+                    pageSize: countryPageSize,
+                    showSizeChanger: { showSearch: false },
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    onChange: (nextPage, nextPageSize) => {
+                      setCountryPage(nextPage)
+                      if (nextPageSize && nextPageSize !== countryPageSize) {
+                        setCountryPageSize(nextPageSize)
+                      }
+                    },
                     showTotal: (total) => `共 ${total} 条`,
                   }}
                 />
@@ -430,7 +446,7 @@ export const CountryPage: React.FC = () => {
                   title={syncModalMode === 'result' ? '同步完成' : syncModalMode === 'running' ? '同步进行中' : '确认同步公网国家数据？'}
                   open={syncModalOpen}
                   closable={syncModalMode !== 'running'}
-                  mask={{ closable: false }}
+                  maskClosable={syncModalMode !== 'running'}
                   onCancel={() => {
                     closeSyncModal()
                   }}
@@ -499,8 +515,16 @@ export const CountryPage: React.FC = () => {
                     dataSource={syncRuns}
                     loading={syncRunsLoading}
                     pagination={{
-                      pageSize: 8,
-                      showSizeChanger: false,
+                      current: syncLogPage,
+                      pageSize: syncLogPageSize,
+                      showSizeChanger: { showSearch: false },
+                      pageSizeOptions: ['8', '20', '50', '100'],
+                      onChange: (nextPage, nextPageSize) => {
+                        setSyncLogPage(nextPage)
+                        if (nextPageSize && nextPageSize !== syncLogPageSize) {
+                          setSyncLogPageSize(nextPageSize)
+                        }
+                      },
                       showTotal: (total) => `共 ${total} 条`,
                     }}
                     scroll={{ x: 860 }}

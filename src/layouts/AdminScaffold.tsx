@@ -4,7 +4,7 @@ import type { MenuProps } from 'antd'
 import { useLocation } from 'react-router-dom'
 import { LogoutOutlined } from '@ant-design/icons'
 
-import fallbackAvatarUrl from '@/assets/avatar-fallback.svg?url'
+const fallbackAvatarUrl = '/static/avatar/avatar-fallback.jpg'
 
 import './AdminScaffold.css'
 

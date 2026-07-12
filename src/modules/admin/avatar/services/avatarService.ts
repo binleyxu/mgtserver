@@ -4,6 +4,20 @@ import { extractApiMessage, isBusinessSuccess, readEnvelopeCode, readEnvelopeDat
 
 import type { UploadAvatarParams, UploadAvatarResult } from '../types/avatar.types'
 
+function normalizePersistedAvatarUrl(value: unknown, fieldName: 'avatar_small_url' | 'avatar_large_url'): string {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+
+  if (!normalized) {
+    throw new Error(`头像上传失败：后端未返回 ${fieldName}`)
+  }
+
+  if (normalized.startsWith('data:image/')) {
+    throw new Error('头像上传失败：后端返回了 base64 数据。请将头像文件落盘到 /static/avatar/... 并返回文件 URL，而不是 data:image/...')
+  }
+
+  return normalized
+}
+
 export async function uploadAdminAvatar({ adminId, file, crop, imageMeta }: UploadAvatarParams): Promise<UploadAvatarResult> {
   const normalizedAdminId = String(adminId ?? '').trim()
   if (!normalizedAdminId) {
@@ -56,8 +70,8 @@ export async function uploadAdminAvatar({ adminId, file, crop, imageMeta }: Uplo
 
   return {
     adminId: String(data.admin_id ?? normalizedAdminId),
-    avatarSmallUrl: String(data.avatar_small_url ?? ''),
-    avatarLargeUrl: String(data.avatar_large_url ?? ''),
+    avatarSmallUrl: normalizePersistedAvatarUrl(data.avatar_small_url, 'avatar_small_url'),
+    avatarLargeUrl: normalizePersistedAvatarUrl(data.avatar_large_url, 'avatar_large_url'),
     avatarVersion: typeof data.avatar_version === 'number' ? data.avatar_version : undefined,
     avatarUpdatedAt: typeof data.avatar_updated_at === 'string' ? data.avatar_updated_at : undefined,
   }

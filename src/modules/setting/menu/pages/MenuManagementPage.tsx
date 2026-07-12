@@ -26,6 +26,8 @@ export const MenuManagementPage: React.FC = () => {
   const [currentAdminAvatarUrl, setCurrentAdminAvatarUrl] = useState<string>(getAdminDisplayAvatarUrl())
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<MenuItemInfo[]>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [modalOpen, setModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingMenu, setEditingMenu] = useState<MenuItemInfo | null>(null)
@@ -79,6 +81,13 @@ export const MenuManagementPage: React.FC = () => {
     loadCurrentAdminName()
     loadMenus()
   }, [])
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(items.length / pageSize))
+    if (page > maxPage) {
+      setPage(maxPage)
+    }
+  }, [items.length, page, pageSize])
 
   const parentOptions = useMemo(
     () => items.map((item) => ({ label: `${item.id} - ${item.label}`, value: item.id })),
@@ -177,9 +186,7 @@ export const MenuManagementPage: React.FC = () => {
       key: 'action',
       width: 120,
       render: (_: unknown, record: MenuItemInfo) => (
-        <Button size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)}>
-          编辑
-        </Button>
+        <Button size="small" icon={<EditOutlined />} aria-label="编辑菜单" onClick={() => openEditModal(record)} />
       ),
     },
   ]
@@ -202,9 +209,7 @@ export const MenuManagementPage: React.FC = () => {
           className="admin-card"
           extra={
             <Space>
-              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-                新增菜单
-              </Button>
+              <Button type="primary" shape="circle" icon={<PlusOutlined />} aria-label="新增菜单" onClick={openCreateModal} />
             </Space>
           }
         >
@@ -213,7 +218,20 @@ export const MenuManagementPage: React.FC = () => {
             dataSource={items}
             loading={loading}
             rowKey={(record) => record.id}
-            pagination={false}
+            pagination={{
+              current: page,
+              pageSize,
+              total: items.length,
+              showSizeChanger: { showSearch: false },
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                if (nextPageSize && nextPageSize !== pageSize) {
+                  setPageSize(nextPageSize)
+                }
+              },
+              showTotal: (total) => `共 ${total} 条`,
+            }}
           />
 
           <Modal

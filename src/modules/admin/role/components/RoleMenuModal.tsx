@@ -162,9 +162,6 @@ export const RoleMenuModal: React.FC<RoleMenuModalProps> = ({
       cancelText="取消"
       width={720}
     >
-      <div style={{ marginBottom: 12, color: '#8c8c8c' }}>
-        勾选该角色可见的左侧菜单（menu_id）
-      </div>
       <Checkbox.Group
         style={{ width: '100%' }}
         value={selectedRoleMenuIds}

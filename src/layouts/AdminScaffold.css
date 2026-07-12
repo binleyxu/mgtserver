@@ -1,5 +1,7 @@
 .admin-scaffold-layout {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background:
     radial-gradient(circle at 10% -20%, #f7faf8 0%, #eef3f5 46%, #e8eef1 100%);
 }
@@ -65,9 +67,11 @@
 }
 
 .admin-scaffold-body {
+  height: calc(100vh - 64px);
   min-height: calc(100vh - 64px);
   display: grid;
   grid-template-columns: 44px 176px minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .admin-scaffold-rail {
@@ -344,10 +348,17 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .admin-scaffold-content {
+  flex: 1;
+  min-height: 0;
   padding: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .admin-scaffold-content > *:first-child {
