@@ -9,6 +9,8 @@ import type {
 import type { Role, UpdateRoleRequest } from '../role'
 import {
   getAdminList,
+  getAdminDetail,
+  getAdminByUsername,
   deleteAdmin,
   createAdmin,
   updateAdmin,
@@ -68,12 +70,13 @@ function deriveRolesFromAdmins(adminRows: Admin[]): Role[] {
 
 type AdminAvatarCellProps = {
   avatarUrl?: string | null
+  avatarVersion?: number | null
   alt: string
 }
 
-const AdminAvatarCell: React.FC<AdminAvatarCellProps> = ({ avatarUrl, alt }) => {
+const AdminAvatarCell: React.FC<AdminAvatarCellProps> = ({ avatarUrl, avatarVersion, alt }) => {
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
-  const normalizedUrl = resolveAvatarUrl(avatarUrl)
+  const normalizedUrl = resolveAvatarUrl(avatarUrl, avatarVersion)
   const shouldShowDefault = !normalizedUrl || avatarLoadFailed
 
   if (shouldShowDefault) {
@@ -231,17 +234,46 @@ export const AdminPage: React.FC = () => {
       return
     }
 
+    const applyCurrentAdminProfile = (admin?: Admin | null): boolean => {
+      if (!admin) {
+        return false
+      }
+
+      const username = admin.username || ''
+      const currentAvatarUrl = resolveAvatarUrl(admin.avatarSmallUrl || '', admin.avatarVersion)
+      setCurrentAdminName(username || '未加载姓名')
+      setCurrentAdminAvatarUrl(currentAvatarUrl)
+      setAdminDisplayProfile(username || undefined, currentAvatarUrl || undefined)
+      return true
+    }
+
     try {
       const response = await getAdminList(1, 1000)
       const adminKey = String(adminId)
       const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
-      if (!matched) {
+      if (applyCurrentAdminProfile(matched)) {
         return
       }
-      const username = matched?.username || ''
-      setCurrentAdminName(username || '未加载姓名')
-      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
-      setAdminDisplayProfile(username || undefined, matched?.avatarSmallUrl || undefined)
+
+      if (/^\d+$/.test(adminKey)) {
+        try {
+          const detail = await getAdminDetail(adminKey)
+          if (applyCurrentAdminProfile(detail.data)) {
+            return
+          }
+        } catch {
+          // Continue with username fallback.
+        }
+      }
+
+      try {
+        const byUsername = await getAdminByUsername(adminKey)
+        if (applyCurrentAdminProfile(byUsername)) {
+          return
+        }
+      } catch {
+        // Keep cached profile.
+      }
     } catch {
       // Keep cached display profile when network request fails.
     }
@@ -322,6 +354,13 @@ export const AdminPage: React.FC = () => {
         avatarUpdatedAt: payload.avatarUpdatedAt ?? null,
       }
     })
+
+    const currentAdminId = getAdminIdFromToken()
+    if (currentAdminId && String(currentAdminId) === String(payload.adminId)) {
+      const currentAvatarUrl = resolveAvatarUrl(payload.avatarSmallUrl, payload.avatarVersion)
+      setCurrentAdminAvatarUrl(currentAvatarUrl)
+      setAdminDisplayProfile(currentAdminName || undefined, currentAvatarUrl || undefined)
+    }
   }
 
   const handleSubmit = async () => {
@@ -527,7 +566,11 @@ export const AdminPage: React.FC = () => {
       key: 'avatarSmallUrl',
       width: 90,
       render: (avatarSmallUrl: string | null | undefined, record: Admin) => (
-        <AdminAvatarCell avatarUrl={avatarSmallUrl || record.avatarLargeUrl} alt={`${record.username} 头像`} />
+        <AdminAvatarCell
+          avatarUrl={avatarSmallUrl || record.avatarLargeUrl}
+          avatarVersion={record.avatarVersion}
+          alt={`${record.username} 头像`}
+        />
       ),
     },
     {
@@ -766,7 +809,11 @@ export const AdminPage: React.FC = () => {
                       <Space direction="vertical" size={8} style={{ width: '100%' }}>
                         {editingAdmin ? (
                           <Space size={12}>
-                            <AdminAvatarCell avatarUrl={editingAdmin.avatarSmallUrl || editingAdmin.avatarLargeUrl} alt="当前头像" />
+                            <AdminAvatarCell
+                              avatarUrl={editingAdmin.avatarSmallUrl || editingAdmin.avatarLargeUrl}
+                              avatarVersion={editingAdmin.avatarVersion}
+                              alt="当前头像"
+                            />
                             <Button onClick={openAvatarModal}>编辑头像</Button>
                           </Space>
                         ) : (
@@ -780,7 +827,9 @@ export const AdminPage: React.FC = () => {
                 <AvatarUploadModal
                   open={avatarModalOpen}
                   adminId={editingAdmin?.id}
+                  adminName={editingAdmin?.username || editingAdmin?.name}
                   currentAvatarSmallUrl={editingAdmin?.avatarSmallUrl}
+                  currentAvatarVersion={editingAdmin?.avatarVersion}
                   onClose={() => setAvatarModalOpen(false)}
                   onSaved={handleAvatarSaved}
                 />

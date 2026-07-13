@@ -53,16 +53,18 @@
 
 ### 已符合 `public/static` 职责（代码在用）
 
-- `avatar/avatar-fallback.jpg`
-- `avatar/supervisor_32.jpg`
-- `avatar/supervisor_128.jpg`
+- 无（头像上传文件统一由后端落盘并通过 `/api/static/avatar/...` 代理访问）
+
+### 已符合 `src/assets` 职责（新增）
+
+- `avatar-fallback.jpg`（前端默认占位图）
 
 ## 隐藏问题记录（头像链路，2026-07-13）
 
 ### 问题现象
 
 - 后端头像上传接口返回了相对路径 `/static/avatar/{admin_id}/avatar_32.jpg` 与 `/static/avatar/{admin_id}/avatar_128.jpg`。
-- 但在管理端域名 `http://192.168.0.99:3000` 访问同路径时，返回 `text/html`（前端页面）而不是 `image/jpeg`。
+- 但在管理端域名 `http://192.168.0.99:3000` 或开发域名 `http://192.168.0.99:5173` 访问同路径时，可能返回 `text/html`（前端页面）而不是 `image/jpeg`。
 
 ### 根因
 
@@ -71,12 +73,13 @@
 ### 正确做法
 
 - 保持后端返回相对路径 `/static/avatar/...`（推荐）。
-- 在管理端网关/代理层增加规则：`/static/avatar/*` 转发到后端 `http://192.168.0.206:8080/static/avatar/*`。
+- 前端渲染时统一改写为 `/api/static/avatar/...` 走代理，避免 SPA 回退。
+- 管理端网关/代理层建议增加规则：`/api/static/avatar/*` 或 `/static/avatar/*` 转发到后端 `http://192.168.0.206:8080/static/avatar/*`。
 - 若无法快速改代理，可临时让后端返回绝对地址（跨域方案），但不作为首选长期方案。
 
 ### 验收标准
 
-- `http://192.168.0.99:3000/static/avatar/254/avatar_32.jpg` 返回 200 且 `Content-Type: image/jpeg`。
+- `http://192.168.0.99:5173/api/static/avatar/254/avatar_32.jpg` 返回 200 且 `Content-Type: image/jpeg`。
 - 页面管理员头像显示上传后的真实头像，而不是长期停留在默认占位图。
 
 ### 待清理候选（当前未检索到引用）
@@ -93,5 +96,5 @@
 ## 代码使用建议
 
 - `src/assets` 统一使用别名导入：`@/assets/...`。
-- `public/static` 统一使用根路径：`/static/...`。
+- 后端上传头像路径在前端统一走代理：`/api/static/avatar/...`。
 - 禁止在 `src/assets` 中放置“仅靠 URL 直接访问”的运行时文件。

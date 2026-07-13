@@ -39,8 +39,26 @@ function handleAuthResponse(response: Response): void {
 function mapAdminItem(item: any): Admin {
   const rawId = item.id ?? item.admin_id ?? item.user_id ?? item.uid
   const toText = (value: unknown): string => (typeof value === 'string' ? value : value != null ? String(value) : '')
-  const avatarSmall = toText(item.avatar_small_url ?? item.avatar_url)
-  const avatarLarge = toText(item.avatar_large_url ?? item.avatar_url)
+
+  const readAvatarUrl = (value: unknown): string => {
+    if (typeof value === 'string') {
+      return value.trim()
+    }
+
+    if (value && typeof value === 'object') {
+      const candidate = value as Record<string, unknown>
+      const direct = typeof candidate.url === 'string' ? candidate.url.trim() : ''
+      if (direct) return direct
+
+      const path = typeof candidate.path === 'string' ? candidate.path.trim() : ''
+      if (path) return path
+    }
+
+    return ''
+  }
+
+  const avatarSmall = readAvatarUrl(item.avatar_small_url) || readAvatarUrl(item.avatar_url)
+  const avatarLarge = readAvatarUrl(item.avatar_large_url) || readAvatarUrl(item.avatar_url)
 
   return {
     id: rawId !== undefined && rawId !== null ? String(rawId) : '',

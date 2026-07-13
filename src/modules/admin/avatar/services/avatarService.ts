@@ -67,9 +67,14 @@ export async function uploadAdminAvatar({ adminId, file, crop, imageMeta }: Uplo
   }
 
   const data = readEnvelopeDataObject(payload) ?? (payload as Record<string, unknown>)
+  const returnedAdminId = String(data.admin_id ?? normalizedAdminId)
+
+  if (data.admin_id !== undefined && returnedAdminId !== normalizedAdminId) {
+    throw new Error(`头像上传失败：返回的管理员 ID 不一致（请求 ${normalizedAdminId}，返回 ${returnedAdminId}）。请检查后端是否按路径 /admin/{id}/avatar 正确落盘到 /static/avatar/${normalizedAdminId}/。`)
+  }
 
   return {
-    adminId: String(data.admin_id ?? normalizedAdminId),
+    adminId: returnedAdminId,
     avatarSmallUrl: normalizePersistedAvatarUrl(data.avatar_small_url, 'avatar_small_url'),
     avatarLargeUrl: normalizePersistedAvatarUrl(data.avatar_large_url, 'avatar_large_url'),
     avatarVersion: typeof data.avatar_version === 'number' ? data.avatar_version : undefined,

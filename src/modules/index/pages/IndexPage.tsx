@@ -13,7 +13,7 @@ import {
 } from '@/auth'
 import '../styles/IndexPage.css'
 import countryGlobeIcon from '@/assets/country-globe.svg?url'
-import { getAdminDetail, getAdminList } from '../../admin'
+import { getAdminDetail, getAdminList, resolveAvatarUrl } from '../../admin'
 import { AdminScaffold } from '@/layouts/AdminScaffold'
 import { buildAdminMenuItems } from '@/layouts/adminNavigation'
 
@@ -39,17 +39,19 @@ export const IndexPage: React.FC = () => {
     try {
       const detail = await getAdminDetail(adminId)
       const username = detail.data?.username || ''
+      const detailAvatarUrl = resolveAvatarUrl(detail.data?.avatarSmallUrl || '', detail.data?.avatarVersion)
       setCurrentAdminName(username || '未加载姓名')
-      setCurrentAdminAvatarUrl(detail.data?.avatarSmallUrl || '')
-      setAdminDisplayProfile(username || undefined, detail.data?.avatarSmallUrl || undefined)
+      setCurrentAdminAvatarUrl(detailAvatarUrl)
+      setAdminDisplayProfile(username || undefined, detailAvatarUrl || undefined)
 
       if (!detail.data?.avatarSmallUrl) {
         const response = await getAdminList(1, 1000)
         const adminKey = String(adminId)
         const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
         if (matched?.avatarSmallUrl) {
-          setCurrentAdminAvatarUrl(matched.avatarSmallUrl)
-          setAdminDisplayProfile(username || undefined, matched.avatarSmallUrl)
+          const fallbackAvatarUrl = resolveAvatarUrl(matched.avatarSmallUrl, matched.avatarVersion)
+          setCurrentAdminAvatarUrl(fallbackAvatarUrl)
+          setAdminDisplayProfile(username || undefined, fallbackAvatarUrl || undefined)
         }
       }
       return
@@ -64,9 +66,10 @@ export const IndexPage: React.FC = () => {
       if (!matched) {
         return
       }
+      const fallbackAvatarUrl = resolveAvatarUrl(matched?.avatarSmallUrl || '', matched?.avatarVersion)
       setCurrentAdminName(matched?.username || '未加载姓名')
-      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
-      setAdminDisplayProfile(matched?.username || undefined, matched?.avatarSmallUrl || undefined)
+      setCurrentAdminAvatarUrl(fallbackAvatarUrl)
+      setAdminDisplayProfile(matched?.username || undefined, fallbackAvatarUrl || undefined)
     } catch (error) {
       console.warn('[IndexPage] 加载管理员列表也失败。', error)
       // Keep cached display profile when network request fails.

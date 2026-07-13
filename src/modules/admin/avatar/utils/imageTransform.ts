@@ -1,4 +1,5 @@
 import type { AvatarCanvasView, AvatarCropRect, AvatarImageMeta, AvatarSize } from '../types/avatar.types'
+import { API_BASE_URL } from '../../../../config'
 
 export const ALLOWED_AVATAR_MIME_TYPES = new Set(['image/bmp', 'image/jpeg', 'image/png'])
 export const AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
@@ -6,8 +7,77 @@ export const AVATAR_MIN_IMAGE_SIDE = 128
 export const AVATAR_CANVAS_SIZE = 280
 export const AVATAR_CROP_BOX_SIZE = 200
 
-export function resolveAvatarUrl(url?: string | null): string {
-  return typeof url === 'string' ? url.trim() : ''
+function toApiOrigin(): string {
+  const base = typeof API_BASE_URL === 'string' ? API_BASE_URL.trim() : ''
+  if (!base) return ''
+
+  try {
+    return new URL(base, window.location.origin).origin
+  } catch {
+    return ''
+  }
+}
+
+function toProxiedStaticPath(path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (normalizedPath.startsWith('/api/static/')) {
+    return normalizedPath
+  }
+
+  if (normalizedPath.startsWith('/static/')) {
+    return `/api${normalizedPath}`
+  }
+
+  return normalizedPath
+}
+
+function appendAvatarVersion(url: string, version?: number | null): string {
+  if (!Number.isFinite(version) || Number(version) <= 0) {
+    return url
+  }
+
+  const normalizedVersion = String(Number(version))
+  const hasQuery = url.includes('?')
+  return `${url}${hasQuery ? '&' : '?'}v=${normalizedVersion}`
+}
+
+export function resolveAvatarUrl(url?: string | null, version?: number | null): string {
+  const normalized = typeof url === 'string' ? url.trim().replace(/\\/g, '/') : ''
+  if (!normalized) return ''
+
+  const lowered = normalized.toLowerCase()
+  if (lowered === 'null' || lowered === 'undefined' || lowered === '[object object]') {
+    return ''
+  }
+
+  // Keep initials fallback when backend still returns placeholder data-uri.
+  if (normalized.startsWith('data:image/svg+xml')) {
+    return ''
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('data:') || normalized.startsWith('blob:')) {
+    return appendAvatarVersion(normalized, version)
+  }
+
+  const normalizedPath = normalized.startsWith('static/')
+    ? `/${normalized}`
+    : normalized
+
+  if (normalizedPath.startsWith('/static/') || normalizedPath.startsWith('/api/static/')) {
+    const proxiedPath = toProxiedStaticPath(normalizedPath)
+    const apiOrigin = toApiOrigin()
+
+    // In dev/proxy mode, prefer same-origin /api/static/... to avoid SPA fallback on /static/...
+    if (API_BASE_URL.startsWith('/')) {
+      return appendAvatarVersion(proxiedPath, version)
+    }
+
+    const absolute = apiOrigin ? `${apiOrigin}${normalizedPath.startsWith('/api/static/') ? normalizedPath.replace(/^\/api/, '') : normalizedPath}` : proxiedPath
+    return appendAvatarVersion(absolute, version)
+  }
+
+  return appendAvatarVersion(normalizedPath, version)
 }
 
 export function validateAvatarFile(file: File): string | null {

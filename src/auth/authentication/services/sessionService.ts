@@ -97,6 +97,27 @@ export function getAdminRoleFromToken(token?: string | null): string | null {
   return typeof payload.role === 'string' ? payload.role : null
 }
 
+export function getAdminUsernameFromToken(token?: string | null): string | null {
+  const target = token ?? getAdminToken()
+  if (!target) {
+    return null
+  }
+
+  const payload = decodeJwtPayload(target)
+  if (!payload) {
+    return null
+  }
+
+  const candidates = [payload.username, payload.user_name, payload.preferred_username, payload.name]
+  for (const item of candidates) {
+    if (typeof item === 'string' && item.trim()) {
+      return item.trim()
+    }
+  }
+
+  return null
+}
+
 export function getAdminDisplayName(): string {
   if (!isBrowser()) {
     return ''

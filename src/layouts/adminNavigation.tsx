@@ -52,8 +52,28 @@ export function buildAdminMenuItems({
     label: '设置',
     children: [
       {
-        key: 'menu-management',
+        key: 'system-setting',
         icon: <SettingOutlined />,
+        label: '系统设置',
+        onClick: () => navigate('/setting/system-setting'),
+      },
+      {
+        key: 'menu-management',
+        icon: (
+          <svg
+            className="menu-vector-icon"
+            aria-hidden="true"
+            viewBox="0 0 64 64"
+          >
+            <path
+              d="M10 4h32l12 12v37.5l-6 6-8-8-8 8-8-8-8 8-6-6V10a6 6 0 0 1 6-6Zm0 4a2 2 0 0 0-2 2v42.1l2 2 8-8 8 8 8-8 8 8 8-8 2-2V18H38a2 2 0 0 1-2-2V8H10Z"
+              fill="currentColor"
+            />
+            <rect x="16" y="22" width="16" height="4" rx="2" fill="currentColor" />
+            <rect x="16" y="30" width="28" height="4" rx="2" fill="currentColor" />
+            <rect x="16" y="38" width="32" height="4" rx="2" fill="currentColor" />
+          </svg>
+        ),
         label: '菜单管理',
         onClick: () => navigate('/setting/menu'),
       },

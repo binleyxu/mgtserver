@@ -5,11 +5,14 @@ import { uploadAdminAvatar } from '../services/avatarService'
 import { useAvatarCrop } from '../hooks/useAvatarCrop'
 import AvatarCropCanvas from './AvatarCropCanvas'
 import AvatarPreview from './AvatarPreview'
+import { resolveAvatarUrl } from '../utils/imageTransform'
 
 type AvatarUploadModalProps = {
   open: boolean
   adminId?: string
+  adminName?: string
   currentAvatarSmallUrl?: string | null
+  currentAvatarVersion?: number | null
   onClose: () => void
   onSaved: (payload: {
     adminId: string
@@ -23,7 +26,9 @@ type AvatarUploadModalProps = {
 export function AvatarUploadModal({
   open,
   adminId,
+  adminName,
   currentAvatarSmallUrl,
+  currentAvatarVersion,
   onClose,
   onSaved,
 }: AvatarUploadModalProps) {
@@ -34,6 +39,7 @@ export function AvatarUploadModal({
   const [endpointUnavailable, setEndpointUnavailable] = useState(false)
 
   const { image, imageMeta, boxSize, cropBoxSize, zoom, panX, panY, preview, cropRect, setFile, setZoom, updatePan, resizeCropBox, reset } = useAvatarCrop()
+  const normalizedFallbackUrl = resolveAvatarUrl(currentAvatarSmallUrl || '', currentAvatarVersion)
 
   useEffect(() => {
     if (!open) {
@@ -46,6 +52,8 @@ export function AvatarUploadModal({
 
   const handlePickFile = async (file?: File) => {
     if (!file) return
+
+    setEndpointUnavailable(false)
 
     const error = await setFile(file)
     if (error) {
@@ -70,6 +78,7 @@ export function AvatarUploadModal({
 
     try {
       setSaving(true)
+      setEndpointUnavailable(false)
       const result = await uploadAdminAvatar({
         adminId,
         file: selectedFile,
@@ -101,7 +110,7 @@ export function AvatarUploadModal({
       okText="保存头像"
       cancelText="取消"
       confirmLoading={saving}
-      okButtonProps={{ disabled: endpointUnavailable || !adminId }}
+      okButtonProps={{ disabled: !adminId }}
       width={760}
       destroyOnClose
     >
@@ -111,6 +120,15 @@ export function AvatarUploadModal({
           showIcon
           message="请先保存管理员基础信息"
           description="新增管理员需要先保存后才能上传头像。"
+          style={{ marginBottom: 12 }}
+        />
+      ) : null}
+
+      {adminId ? (
+        <Alert
+          type="info"
+          showIcon
+          message={`当前目标管理员：${adminName ? `${adminName}（ID: ${adminId}）` : `ID: ${adminId}`}`}
           style={{ marginBottom: 12 }}
         />
       ) : null}
@@ -163,6 +181,10 @@ export function AvatarUploadModal({
               type="file"
               accept=".bmp,.jpg,.jpeg,.png,image/bmp,image/jpeg,image/png"
               style={{ display: 'none' }}
+              onClick={(event) => {
+                // Allow selecting the same file repeatedly after a failed upload.
+                event.currentTarget.value = ''
+              }}
               onChange={(event) => {
                 void handlePickFile(event.target.files?.[0])
               }}
@@ -184,7 +206,7 @@ export function AvatarUploadModal({
           <AvatarPreview
             smallDataUrl={preview.smallDataUrl}
             largeDataUrl={preview.largeDataUrl}
-            fallbackUrl={currentAvatarSmallUrl || ''}
+            fallbackUrl={normalizedFallbackUrl}
           />
           <div style={{ marginTop: 12, fontSize: 12, color: '#6d7f8d', lineHeight: 1.5 }}>
             拖动方框可移动选区，拖右下角手柄可放大/缩小选区。<br />

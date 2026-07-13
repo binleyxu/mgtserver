@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Modal, Spin } from 'antd'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Alert, Form, Input, Button, Card, message, Modal, Spin } from 'antd'
 import { Checkbox } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useLogin } from '../hooks/useLogin'
@@ -26,6 +26,7 @@ const readStoredTimestamp = (key: string): number | null => {
 }
 
 export const LoginPage: React.FC = () => {
+  const location = useLocation()
   const navigate = useNavigate()
   const { login, loading } = useLogin()
   const [form] = Form.useForm()
@@ -42,6 +43,7 @@ export const LoginPage: React.FC = () => {
   const [expiresAt, setExpiresAt] = useState<number | null>(null)
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null)
+  const fromMaintenance = Boolean((location.state as { maintenance?: boolean } | null)?.maintenance)
 
   const challengeStatusMessage =
     loginFeedback ??
@@ -162,6 +164,15 @@ export const LoginPage: React.FC = () => {
     <div className="login-page">
       <div className="login-container">
         <Card className="login-card" title={<h1 className="login-title">管理员登录</h1>}>
+          {fromMaintenance && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="系统维护中"
+              description="当前仅允许白名单账号访问，其他账号已被暂时限制登录。"
+            />
+          )}
           <Form
             form={form}
             onFinish={handleSubmit}

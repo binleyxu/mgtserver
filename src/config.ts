@@ -7,6 +7,17 @@
 // 生产环境可通过 VITE_API_BASE_URL 覆盖。
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
+const DEFAULT_MAINTENANCE_WHITELIST = ['supervisor']
+const maintenanceWhitelistRaw = import.meta.env.VITE_MAINTENANCE_WHITELIST ?? ''
+const parsedMaintenanceWhitelist = maintenanceWhitelistRaw
+	.split(/[\n,;]+/)
+	.map((item: string) => item.trim())
+	.filter(Boolean)
+
+export const MAINTENANCE_WHITELIST = parsedMaintenanceWhitelist.length
+	? parsedMaintenanceWhitelist
+	: DEFAULT_MAINTENANCE_WHITELIST
+
 // UI display timezone. Defaults to Australia/Sydney for ops consistency.
 export const DISPLAY_TIME_ZONE = import.meta.env.VITE_DISPLAY_TIME_ZONE ?? 'Australia/Sydney'
 
@@ -73,6 +84,9 @@ export const API_ENDPOINTS = {
 		COUNTRY_SYNC_CANCEL_LATEST: withApiBase('/region/country/sync/cancel-latest'),
 		COUNTRY_SYNC_RUNS: withApiBase('/region/country/sync-runs'),
 		COUNTRY_DISPLAY_NAME_UPDATE: (countryId: number) => withApiBase(`/region/country/${countryId}/display-name`),
+	},
+	SETTING: {
+		SYSTEM_SETTING: withApiBase('/setting/system-setting'),
 	},
 	CLIENT: {
 		DIAGNOSTIC_LOG: withApiBase('/client/log'),

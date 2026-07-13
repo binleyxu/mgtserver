@@ -3,8 +3,9 @@ import { Layout, Menu, Breadcrumb, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation } from 'react-router-dom'
 import { LogoutOutlined } from '@ant-design/icons'
+import avatarFallbackUrl from '@/assets/avatar-fallback.jpg?url'
 
-const fallbackAvatarUrl = '/static/avatar/avatar-fallback.jpg'
+const fallbackAvatarUrl = avatarFallbackUrl
 
 import './AdminScaffold.css'
 
@@ -64,6 +65,7 @@ const routeBreadcrumbMap: Record<string, string> = {
   '/user': '用户',
   '/setting': '设置',
   '/setting/menu': '菜单管理',
+  '/setting/system-setting': '系统设置',
   '/setting/region': '地区管理',
   '/setting/region/country': '国家',
 }
@@ -165,12 +167,14 @@ export const AdminScaffold = ({
   return (
     <Layout className="admin-scaffold-layout">
       <Header className="admin-scaffold-header">
-        <div className="admin-scaffold-header-left">
-          <img className="admin-scaffold-brand-image" src="/logo.png" alt="管理端 logo" />
-        </div>
+        <div className="admin-scaffold-header-brand">
+          <div className="admin-scaffold-header-left">
+            <img className="admin-scaffold-brand-image" src="/logo.png" alt="管理端 logo" />
+          </div>
 
-        <div className="admin-scaffold-header-center">
-          <h1 className="admin-scaffold-title">{title}</h1>
+          <div className="admin-scaffold-header-center">
+            <h1 className="admin-scaffold-title">{title}</h1>
+          </div>
         </div>
 
         <div className="admin-scaffold-header-right">

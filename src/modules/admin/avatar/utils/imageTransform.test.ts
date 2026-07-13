@@ -10,8 +10,17 @@ import {
 } from './imageTransform'
 
 describe('admin avatar imageTransform', () => {
-  it('resolveAvatarUrl should return empty string when url is missing', () => {
+  it('resolveAvatarUrl should normalize url and support version query', () => {
     expect(resolveAvatarUrl('https://example.com/a.jpg')).toBe('https://example.com/a.jpg')
+    expect(resolveAvatarUrl('https://example.com/a.jpg', 2)).toBe('https://example.com/a.jpg?v=2')
+    expect(resolveAvatarUrl('/api/static/avatar/1/a.jpg', 3)).toContain('/api/static/avatar/1/a.jpg?v=3')
+    expect(resolveAvatarUrl('/static/avatar/1/a.jpg', 4)).toContain('/api/static/avatar/1/a.jpg?v=4')
+    expect(resolveAvatarUrl('static/avatar/1/a.jpg', 5)).toContain('/api/static/avatar/1/a.jpg?v=5')
+    expect(resolveAvatarUrl('\\static\\avatar\\1\\a.jpg', 6)).toContain('/api/static/avatar/1/a.jpg?v=6')
+    expect(resolveAvatarUrl('[object Object]')).toBe('')
+    expect(resolveAvatarUrl('undefined')).toBe('')
+    expect(resolveAvatarUrl('null')).toBe('')
+    expect(resolveAvatarUrl('data:image/svg+xml;base64,abc')).toBe('')
     expect(resolveAvatarUrl('')).toBe('')
     expect(resolveAvatarUrl(null)).toBe('')
     expect(resolveAvatarUrl(undefined)).toBe('')

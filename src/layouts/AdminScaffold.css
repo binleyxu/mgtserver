@@ -1,4 +1,9 @@
 .admin-scaffold-layout {
+  --admin-header-brand-width: 220px;
+  --admin-header-logo-slot-width: 72px;
+  --admin-header-logo-max-width: 64px;
+  --admin-header-logo-max-height: 32px;
+
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
@@ -11,12 +16,20 @@
   top: 0;
   z-index: 1000;
   display: grid;
-  grid-template-columns: 44px 176px minmax(0, 1fr);
+  grid-template-columns: var(--admin-header-brand-width) minmax(0, 1fr);
   align-items: center;
   height: 64px;
   padding: 0;
   background: #ffffff;
   border-bottom: 1px solid #dbe5eb;
+}
+
+.admin-scaffold-header-brand {
+  height: 100%;
+  display: grid;
+  grid-template-columns: var(--admin-header-logo-slot-width) minmax(0, 1fr);
+  align-items: center;
+  border-right: 1px solid #dbe5eb;
 }
 
 .admin-scaffold-header-left,
@@ -28,13 +41,15 @@
 }
 
 .admin-scaffold-header-left {
-  justify-content: center;
-  border-right: 1px solid #dbe5eb;
+  justify-content: flex-start;
+  padding: 0 8px;
+  min-width: 0;
 }
 
 .admin-scaffold-header-center {
   justify-content: center;
-  border-right: 1px solid #dbe5eb;
+  min-width: 0;
+  padding: 0 8px;
 }
 
 .admin-scaffold-header-right {
@@ -52,8 +67,10 @@
 }
 
 .admin-scaffold-brand-image {
-  width: 32px;
-  height: 32px;
+  width: auto;
+  height: auto;
+  max-width: var(--admin-header-logo-max-width);
+  max-height: var(--admin-header-logo-max-height);
   object-fit: contain;
   display: block;
   border-radius: 8px;
@@ -320,6 +337,14 @@
   transition: filter 0.16s ease;
 }
 
+.admin-scaffold-menu .menu-vector-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  color: currentColor;
+  flex: 0 0 auto;
+}
+
 .admin-scaffold-menu .ant-menu-item-selected .admin-menu-icon,
 .admin-scaffold-menu .ant-menu-submenu-selected .admin-menu-icon {
   filter: invert(53%) sepia(31%) saturate(593%) hue-rotate(142deg) brightness(92%) contrast(90%);
@@ -374,12 +399,13 @@
 }
 
 @media (max-width: 992px) {
-  .admin-scaffold-header {
-    grid-template-columns: 44px 160px minmax(0, 1fr);
+  .admin-scaffold-layout {
+    --admin-header-brand-width: 204px;
+    --admin-header-logo-slot-width: 64px;
   }
 
-  .admin-scaffold-header-center {
-    justify-content: flex-start;
+  .admin-scaffold-header {
+    grid-template-columns: var(--admin-header-brand-width) minmax(0, 1fr);
   }
 
   .admin-scaffold-body {

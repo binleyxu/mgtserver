@@ -1,11 +1,11 @@
 [Unit]
-Description=TCP proxy 3000 to 5174
+Description=TCP proxy 3000 to 5173
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /home/mgtadmin/.local/bin/tcp_proxy.py 0.0.0.0 3000 127.0.0.1 5174
+ExecStart=/usr/bin/python3 /home/mgtadmin/.local/bin/tcp_proxy.py 0.0.0.0 3000 127.0.0.1 5173
 Restart=always
 RestartSec=2
 

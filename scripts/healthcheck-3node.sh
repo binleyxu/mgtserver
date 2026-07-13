@@ -24,6 +24,7 @@ check "dbserver ssh alias" ssh -o BatchMode=yes dbserver hostname
 
 check "frontend service active" ssh -o BatchMode=yes mgtserver "systemctl is-active --quiet mgtserver.service"
 check "frontend url 200" bash -lc "curl -sS -m 8 -I http://192.168.0.99:5173 | grep -q '200 OK'"
+check "frontend avatar dir removed" bash -lc "if [[ -e /home/mgtadmin/public/static/avatar ]]; then echo '/home/mgtadmin/public/static/avatar should not exist'; exit 1; fi"
 
 check "apiserver user service active" ssh -o BatchMode=yes apiserver "export XDG_RUNTIME_DIR=/run/user/\$(id -u); systemctl --user is-active --quiet apiserver.service"
 check "apiserver /login reachable" bash -lc "curl -sS -m 8 -o /tmp/hc_login.out -w '%{http_code}' -X POST http://192.168.0.206:8000/login -H 'content-type: application/json' -d '{\"username\":\"x\",\"password\":\"x\",\"human_token\":\"x\"}' | grep -Eq '^(200|400|401)$'"

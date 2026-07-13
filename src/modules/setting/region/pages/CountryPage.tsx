@@ -13,7 +13,7 @@ import {
   getAdminRoleFromToken,
   setAdminDisplayProfile,
 } from '@/auth'
-import { getAdminList } from '../../../admin'
+import { getAdminDetail, getAdminList, resolveAvatarUrl } from '../../../admin'
 import { getCountryList, getCountrySyncRuns, updateCountryDisplayName } from '../services/countryService'
 import type { Country, CountrySyncSummary } from '../types/country.types'
 import { formatDateTimeDMY } from '../../../../utils/dateTimeFormat'
@@ -103,16 +103,28 @@ export const CountryPage: React.FC = () => {
     }
 
     try {
+      const detail = await getAdminDetail(adminId)
+      const username = detail.data?.username || ''
+      const detailAvatarUrl = resolveAvatarUrl(detail.data?.avatarSmallUrl || '', detail.data?.avatarVersion)
+      setCurrentAdminName(username || '未加载姓名')
+      setCurrentAdminAvatarUrl(detailAvatarUrl)
+      setAdminDisplayProfile(username || undefined, detailAvatarUrl || undefined)
+
+      if (detailAvatarUrl) {
+        return
+      }
+
       const response = await getAdminList(1, 1000)
       const adminKey = String(adminId)
       const matched = (response.data || []).find((item) => String(item.id) === adminKey || item.username === adminKey)
       if (!matched) {
         return
       }
-      const username = matched?.username || ''
-      setCurrentAdminName(username || '未加载姓名')
-      setCurrentAdminAvatarUrl(matched?.avatarSmallUrl || '')
-      setAdminDisplayProfile(username || undefined, matched?.avatarSmallUrl || undefined)
+      const matchedUsername = matched?.username || ''
+      const fallbackAvatarUrl = resolveAvatarUrl(matched?.avatarSmallUrl || '', matched?.avatarVersion)
+      setCurrentAdminName(matchedUsername || '未加载姓名')
+      setCurrentAdminAvatarUrl(fallbackAvatarUrl)
+      setAdminDisplayProfile(matchedUsername || undefined, fallbackAvatarUrl || undefined)
     } catch {
       // Keep cached display profile when network request fails.
     }

@@ -22,6 +22,7 @@ export {
   getAdminToken,
   getAdminIdFromToken,
   getAdminRoleFromToken,
+  getAdminUsernameFromToken,
   getAdminSessionActivityEvents,
   recordAdminSessionActivityEvent,
   getAdminDisplayName,

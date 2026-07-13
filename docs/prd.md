@@ -3,6 +3,7 @@
 ## 0. 需求分册索引
 
 - 登录业务需求文档：[docs/login-business-requirements.md](docs/login-business-requirements.md)
+- 管理员头像业务需求文档：[docs/admin-avatar-business-requirements.md](docs/admin-avatar-business-requirements.md)
 
 ## 1. 产品形态与适用平台
 
